@@ -1,0 +1,118 @@
+section	subsection	is_function_word	article	lemma	gender	part_of_speech	translation_en	pronunciation	example_sentences	other_children	flags
+Rules	Nouns	yes		Nouns are capitalised							no-translation
+Rules	Nouns	yes	Der	Mann sieht die Frau und das Kind	m	noun					no-translation
+Verbs				sein		verb	to be				
+Verbs				haben		verb	to have				
+Verbs				machen		verb	to do / make				
+Verbs				gehen		verb	to go				
+Verbs				kommen		verb	to come				
+Verbs				sehen		verb	to see				
+Nouns	Food		die	pizza	f	noun					lowercase-noun,no-translation
+Nouns	Food		die	wurst	f	noun					lowercase-noun,no-translation
+Nouns	Food		der	kase	m	noun					lowercase-noun,no-translation
+Nouns	Food		der	salat	m	noun					lowercase-noun,no-translation
+Nouns	Food		das	brot	n	noun					lowercase-noun,no-translation
+Nouns	Food		das	schnitzel	n	noun					lowercase-noun,no-translation
+Nouns	Food			zucker		noun					no-gender,no-translation
+Nouns	Food			tee		noun					no-gender,no-translation
+Nouns	Food			kaffee		noun					no-gender,no-translation
+Nouns	Food			kekse		noun					no-gender,no-translation
+Nouns	Food			milch		noun					no-gender,no-translation
+Nouns	Food			wasser		noun					no-gender,no-translation
+Nouns	Places		das	restaurant	n	noun			Hallo, wo is das restaurant, bitte?		lowercase-noun,no-translation
+Nouns	Places		das	hotel	n	noun			Wo ist das hotel?		lowercase-noun,no-translation
+Nouns	Places		das	café	n	noun			Das café ist klein		lowercase-noun,no-translation
+Nouns	Places		die	stadt	f	noun			Die stadt ist alt und schön		lowercase-noun,no-translation
+Nouns	Places		der	park	m	noun		'pahk'	Der park ist groß		lowercase-noun,no-translation
+Nouns	Places		der	bahnhof	m	noun					lowercase-noun,no-translation
+Nouns	Places			hauptbahnhof		noun	central station				no-gender
+Nouns	Places		die	U-bahn	f	noun		'oo'-bahn	Die U-bahn ist billig		no-translation
+Nouns	Places		die	bibliotek	f	noun					lowercase-noun,no-translation
+Nouns	Places		die	bäckerei	f	noun		'beck-e-rye'			lowercase-noun,no-translation
+Nouns	Places		das	Haus	n	noun	the house				
+Nouns	Objects		der	Tisch	m	noun	the table				
+Nouns	Objects			buch		noun	book				no-gender
+Nouns	Professions			lehrer / lehrerin		noun					no-gender,no-translation,multiple-forms
+Nouns	Professions			teacher (m/f)		noun					no-gender,no-translation,multiple-forms
+Nouns	Professions			bäcker / bäckerin		noun	baker (m/f)	'becker'			no-gender,multiple-forms
+Nouns	Professions			verkäufer  / verkäuferin		noun	salesman/woman				no-gender,multiple-forms
+Nouns	Professions			musiker / musikerin		noun	musician				no-gender,multiple-forms
+Adjectives				frisch		adjective	fresh				
+Adjectives				billig		adjective	cheap				
+Adjectives				nett		adjective	nice				
+Adjectives				lecker		adjective	nice				
+Adjectives				neu		adjective	new				
+Adjectives				schnell		adjective	fast / quick				
+Adjectives				satt		adjective	full				
+Adjectives				hungrig		adjective	hungry				
+Adjectives				groß		adjective	big				
+Adjectives				alt		adjective	old				
+Adjectives				schön		adjective		'sh-or-n', where the or is long			no-translation
+Adjectives				klein		adjective	small				
+Adjectives				gut		adjective	good				
+Directions				links		adverb	on the left		Die Bahnhof ist links		
+Directions				rechts		adverb	on the right				
+Directions				hier		adverb	here				
+Directions				da drüben		adverb	over there				
+People				meine mama		noun					no-gender,no-translation
+People				mein papa		noun					no-gender,no-translation
+People				meine schwester		noun					no-gender,no-translation
+People				mein bruder		noun					no-gender,no-translation
+People				meine tochter		noun					no-gender,no-translation
+People				mein sohn		noun		'zorn'			no-gender,no-translation
+People				mein mann		noun	husband		der Mann		no-gender
+People				meine frau		noun	wife		die Frau		no-gender
+People				kind		noun			das Kind		no-gender,no-translation
+Introductions				freut mich		phrase	nice to meet you				
+Introductions				ich komme aus Berlin		phrase					no-translation
+Introductions				ich bin David, und du?		phrase					no-translation
+Introductions				bitte		phrase					no-translation
+Introductions				danke		phrase					no-translation
+Introductions				tschüss		phrase					no-translation
+Introductions				hallo		phrase					no-translation
+Introductions				ja		phrase					no-translation
+Introductions				nein		phrase					no-translation
+Function Words	Articles	yes		der		article	the				
+Function Words	Articles	yes		die		article	the				
+Function Words	Articles	yes		das		article	the				
+Function Words	Articles	yes		ein		article	a / an				
+Function Words	Articles	yes		eine		article	a / an				
+Function Words	Pronouns	yes		du		pronoun	you				
+Function Words	Pronouns	yes		er		pronoun	he				
+Function Words	Pronouns	yes		dein / deine		pronoun	your  (m/f)				multiple-forms
+Function Words	Pronouns	yes		sie / Sie (formal)		pronoun	she / they				multiple-forms
+Function Words	Pronouns	yes		mein / meine		pronoun	my  (m/f)				multiple-forms
+Function Words	Pronouns	yes		ich		pronoun	I				
+Function Words	Pronouns	yes		wir		pronoun	we				
+Function Words	Possessive adjectives	yes		dein		possessive	your				
+Function Words	Possessive adjectives	yes		deine		possessive	your				
+Function Words	Interrogatives	yes		wo		interrogative	where	'voo'			
+Function Words	Conjunctions	yes		und		conjunction	and				
+Function Words	Conjunctions	yes		ist		conjunction	is				
+Function Words	Conjunctions	yes		bist		conjunction	are				
+Function Words	Conjunctions	yes		aber		conjunction	but				
+Function Words	Conjunctions	yes		denn		conjunction	because / for				
+Function Words	Conjunctions	yes		weil		conjunction	because				
+Function Words	Conjunctions	yes		dass		conjunction	that				
+Function Words	Conjunctions	yes		wenn		conjunction	if / when				
+Function Words	Conjunctions	yes		obwohl		conjunction	although				
+Function Words	Conjunctions	yes		oder		conjunction	or				
+Function Words	Conjunctions	yes		mit		conjunction	with				
+Function Words	Prepositions	yes		in		preposition	in / into				
+Function Words	Prepositions	yes		auf		preposition	on / onto				
+Function Words	Prepositions	yes		an		preposition	on / at				
+Function Words	Prepositions	yes		mit		preposition	with				
+Function Words	Prepositions	yes		von		preposition	from / of				
+Function Words	Prepositions	yes		für		preposition	for				
+Function Words	Prepositions	yes		zu		preposition	to / at				
+Function Words	Prepositions	yes		bei		preposition	at / by / with				
+Function Words	Prepositions	yes		nach		preposition	after / to				
+Function Words	Prepositions	yes		seit		preposition	since / for				
+Function Words	Adverbs	yes		heute		adverb	today				
+Function Words	Adverbs	yes		morgen		adverb	tomorrow				
+Function Words	Adverbs	yes		gestern		adverb	yesterday				
+Function Words	Adverbs	yes		hier		adverb	here				
+Function Words	Adverbs	yes		dort		adverb	there				
+Function Words	Adverbs	yes		sehr		adverb	very				
+Function Words	Adverbs	yes		nicht		adverb	not				
+Function Words	Adverbs	yes		schon		adverb	already				

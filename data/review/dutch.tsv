@@ -1,0 +1,60 @@
+section	subsection	is_function_word	article	lemma	gender	part_of_speech	translation_en	pronunciation	example_sentences	other_children	flags
+Verbs				drinkt / drink / drinken		verb	drink (s) / drinks / drink (pl)		Je drinkt | Jullie drinken		multiple-forms
+Verbs				eet		verb	eten (pl)	'eight'			
+Verbs				lees / leest / lezen		verb	read (s) / reads / read (pl)	'lay-zen'			multiple-forms
+Verbs				spreek / spreekt / spreken		verb	speak / speaks / speak (pl)				multiple-forms
+Nouns	Food			sap		noun	juice				no-gender
+Nouns	Food		de	melk	c	noun	milk				lowercase-noun
+Nouns	Food		de	boterham	c	noun	sandwich				lowercase-noun
+Nouns	Food		de	appel	c	noun					lowercase-noun,no-translation
+Nouns	Food		de	brood	c	noun					lowercase-noun,no-translation
+Nouns	Food			water		noun					no-gender,no-translation
+Nouns	Food			rijst		noun	rice	'raced'			no-gender
+Nouns	Objects		de	krant	c	noun	newspaper				lowercase-noun
+Nouns	Objects		het	boek	n	noun	book				lowercase-noun
+Nouns	Objects		het	menu	n	noun		'mah-nu'			lowercase-noun,no-translation
+People			de	jongen / jongens	c	noun		'yung-e'			lowercase-noun,no-translation,multiple-forms
+People			de	kind / kinderen	c	noun	child	'kint'			lowercase-noun,multiple-forms
+People			de	vrouw / vrouwen	c	noun	silent 'n' in the plural	'vr-ow'			lowercase-noun,multiple-forms
+People			de	man / mannen	c	noun					lowercase-noun,no-translation,multiple-forms
+People			de	meisje	c	noun	girl	'mays-je'		miesjes (p)	lowercase-noun
+Introductions	Greetings			goedendag		phrase	Good day				
+Introductions	Greetings			goedenmorgen		phrase	Good morning				
+Introductions	Greetings			hallo		phrase	hello				
+Introductions	Greetings			hoi		phrase	hi				
+Introductions	Greetings			hoe gaat het?		phrase	How's it going				
+Introductions	Greetings			dag		phrase	goodbye / bye				
+Introductions				alsjeblieft		phrase	please				
+Introductions				oke		phrase	ok				
+Introductions				ja		phrase					no-translation
+Introductions				nee		phrase					no-translation
+Introductions				dank je wel		phrase	thank you		dank je = thanks	Also bedankt	
+Introductions				pardon		phrase	excuse me				
+Introductions				sorry		phrase	sorry	'sore-ry'			
+Introductions				tot ziens		phrase	good bye				
+Introductions				spijt me		phrase	I am sorry		het spijt me		
+Function Words	Articles	yes		de		article	the				
+Function Words	Articles	yes		het		article	it	'hit'		the | Gendered nouns	
+Function Words	Articles	yes		dat		article	that				
+Function Words	Interrogatives	yes		wo		interrogative	where	'voo'			
+Function Words	Conjunctions	yes		en		conjunction	and				
+Function Words	Conjunctions	yes		een		conjunction	a / an	'in'			
+Function Words	Conjunctions	yes		beetje		conjunction	bit				
+Function Words	Conjunctions	yes		have		conjunction					no-translation
+Function Words	Conjunctions	yes		ik heb		conjunction	I have			singular	
+Function Words	Conjunctions	yes		je hebt		conjunction	you have			singular / informal	
+Function Words	Conjunctions	yes		u hebt		conjunction	you have			singular / formal	
+Function Words	Conjunctions	yes		hij heeft		conjunction	he has	'hay-ft'		past tense	
+Function Words	Conjunctions	yes		wij / jullie / zij hebben		conjunction	we / you (pl) / they have				multiple-forms
+Function Words	Conjunctions	yes		zijn		conjunction	are	'zane'		Used with people	
+Function Words	Conjunctions	yes		ben / bent		conjunction	am / are				multiple-forms
+Function Words	Conjunctions	yes		of		conjunction	or				
+Function Words	Pronouns	yes		ik		pronoun	I				
+Function Words	Pronouns	yes		hij		pronoun	he	'hay'			
+Function Words	Pronouns	yes		ze / zij		pronoun	she			Distinguished from 'we' by the context	multiple-forms
+Function Words	Pronouns	yes		Zij is blij		pronoun			Means she, since it uses a singular 'is'		no-translation
+Function Words	Pronouns	yes		ze / zij		pronoun	they	'zay'		Distinguished from 'she' by the context	multiple-forms
+Function Words	Pronouns	yes		Zij hebben gelijk		pronoun			Means we, since it uses plural 'hebben'		no-translation
+Function Words	Pronouns	yes		je / jij		pronoun	you				multiple-forms
+Function Words	Pronouns	yes		we / wij		pronoun	we	'vah', like hoo'ver'			multiple-forms
+Function Words	Pronouns	yes		Jullie		pronoun	you (pl)				

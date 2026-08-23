@@ -1,0 +1,20 @@
+# The live SQLite database is deliberately not versioned. SQLite files diff
+# terribly: a small logical change rewrites large stretches of the binary. The
+# versioned artifact is the plain-text export instead. See docs/OVERVIEW.md.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Editor and OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

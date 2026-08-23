@@ -1,0 +1,9 @@
+text	translation_en	links_to	source_text	changes
+Der Mann sieht die Frau und das Kind.	The man sees the woman and the child.	Mann, Frau, Kind, sehen	Der Mann sieht die Frau und das Kind	full stop added
+Hallo, wo ist das Restaurant, bitte?	Hello, where is the restaurant, please?	Restaurant, wo	Hallo, wo is das restaurant, bitte?	"is" corrected to "ist"; Restaurant capitalised
+Wo ist das Hotel?	Where is the hotel?	Hotel, wo	Wo ist das hotel?	Hotel capitalised
+Das Café ist klein.	The cafe is small.	Café, klein	Das café ist klein	Café capitalised; full stop added
+Die Stadt ist alt und schön.	The city is old and beautiful.	Stadt, alt, schön	Die stadt ist alt und schön	Stadt capitalised; full stop added
+Der Park ist groß.	The park is big.	Park, groß	Der park ist groß	Park capitalised; full stop added
+Die U-Bahn ist billig.	The underground is cheap.	U-Bahn, billig	Die U-bahn ist billig	U-Bahn capitalised; full stop added
+Der Bahnhof ist links.	The station is on the left.	Bahnhof, links	Die Bahnhof ist links	GENDER CORRECTED: "Die Bahnhof" to "Der Bahnhof". Bahnhof is masculine, and the mindmap has "der bahnhof" elsewhere, so the source contradicts itself.

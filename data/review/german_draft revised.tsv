@@ -1,0 +1,118 @@
+lemma	answer_form	part_of_speech	gender	translation_en	pronunciation	category	notes	drillable	source_text	changes
+sein		verb		to be			irregular: ich bin / du bist / er ist	yes	sein	
+haben		verb		to have			irregular: ich habe / du hast / er hat	yes	haben	
+machen		verb		to make / to do			regular	yes	machen	
+gehen		verb		to go (on foot)			contrast fahren, which is to go by vehicle	yes	gehen	
+kommen		verb		to come			irregular	yes	kommen	
+sehen		verb		to see			irregular: du siehst / er sieht	yes	sehen	
+Pizza	die Pizza	noun	f	the pizza		Food	plural: die Pizzas or die Pizzen	yes	die pizza	
+Wurst	die Wurst	noun	f	the sausage		Food	plural: die Wuerste (Würste)	yes	die wurst	
+Käse	der Käse	noun	m	the cheese		Food	plural rare	yes	der kase	
+Salat	der Salat	noun	m	the salad / the lettuce		Food	plural: die Salate	yes	der salat	
+Brot	das Brot	noun	n	the bread		Food	plural: die Brote	yes	das brot	
+Schnitzel	das Schnitzel	noun	n	the schnitzel / the cutlet		Food	plural: die Schnitzel, unchanged	yes	das schnitzel	
+Zucker	der Zucker	noun	m	the sugar		Food	no plural in normal use	yes	zucker	
+Tee	der Tee	noun	m	the tea		Food	plural: die Tees	yes	tee	
+Kaffee	der Kaffee	noun	m	the coffee		Food	plural: die Kaffees	yes	kaffee	
+Keks	der Keks	noun	m	the biscuit / the cookie		Food	plural: die Kekse; the source gave the plural form	yes	kekse	
+Milch	die Milch	noun	f	the milk		Food	no plural in normal use	yes	milch	
+Wasser	das Wasser	noun	n	the water		Food	plural rare	yes	wasser	
+Restaurant	das Restaurant	noun	n	the restaurant		Places	plural: die Restaurants	yes	das restaurant	
+Hotel	das Hotel	noun	n	the hotel		Places	plural: die Hotels	yes	das hotel	
+Café	das Café	noun	n	the cafe		Places	plural: die Cafés	yes	das café	
+Stadt	die Stadt	noun	f	the city / the town		Places	plural: die Staedte (Städte)	yes	die stadt	
+Park	der Park	noun	m	the park	pah-k	Places	plural: die Parks	yes	der park	
+Bahnhof	der Bahnhof	noun	m	the railway station		Places	plural: die Bahnhoefe (Bahnhöfe)	yes	der bahnhof	
+Hauptbahnhof	der Hauptbahnhof	noun	m	the central station		Places	Haupt- means main; plural: die Hauptbahnhoefe	yes	hauptbahnhof	
+U-Bahn	die U-Bahn	noun	f	the underground / the subway	oo-baa-hn	Places	short for Untergrundbahn; plural: die U-Bahnen	yes	die U-bahn	
+Bibliothek	die Bibliothek	noun	f	the library		Places	plural: die Bibliotheken	yes	die bibliotek	
+Bäckerei	die Bäckerei	noun	f	the bakery	beck-a-rye	Places	plural: die Baeckereien (Bäckereien)	yes	die bäckerei	
+Haus	das Haus	noun	n	the house		Places	plural: die Haeuser (Häuser)	yes	das Haus	
+Tisch	der Tisch	noun	m	the table		Objects	plural: die Tische	yes	der Tisch	
+Buch	das Buch	noun	n	the book		Objects	plural: die Buecher (Bücher)	yes	buch	
+Lehrer	der Lehrer	noun	m	the teacher (male)		Professions	plural: die Lehrer	yes	lehrer / lehrerin	
+Lehrerin	die Lehrerin	noun	f	the teacher (female)		Professions	plural: die Lehrerinnen	yes	lehrer / lehrerin	
+Bäcker	der Bäcker	noun	m	the baker (male)	becker'	Professions	plural: die Baecker (Bäcker)	yes	bäcker / bäckerin	
+Bäckerin	die Bäckerin	noun	f	the baker (female)		Professions	plural: die Baeckerinnen	yes	bäcker / bäckerin	
+Verkäufer	der Verkäufer	noun	m	the shop assistant (male)		Professions	plural: die Verkaeufer (Verkäufer)	yes	verkäufer / verkäuferin	
+Verkäuferin	die Verkäuferin	noun	f	the shop assistant (female)		Professions	plural: die Verkaeuferinnen	yes	verkäufer / verkäuferin	
+Musiker	der Musiker	noun	m	the musician (male)		Professions	plural: die Musiker	yes	musiker / musikerin	
+Musikerin	die Musikerin	noun	f	the musician (female)		Professions	plural: die Musikerinnen	yes	musiker / musikerin	
+frisch		adjective		fresh				yes	frisch	
+billig		adjective		cheap				yes	billig	
+nett		adjective		nice / kind (of a person)				yes	nett	
+lecker		adjective		tasty / delicious (of food)				yes	lecker	
+neu		adjective		new				yes	neu	
+schnell		adjective		fast / quick				yes	schnell	
+satt		adjective		full (having eaten enough)			only used of a person after eating; contrast voll, which is full of contents	yes	satt	
+hungrig		adjective		hungry				yes	hungrig	
+groß		adjective		big / large				yes	groß	
+alt		adjective		old				yes	alt	
+schön		adjective		beautiful / lovely	sh-or-n', where the or is long		contrast schon, without the umlaut, which means already	yes	schön	
+klein		adjective		small				yes	klein	
+gut		adjective		good				yes	gut	
+links		adverb		on the left		Directions		yes	links	
+rechts		adverb		on the right		Directions		yes	rechts	
+hier		adverb		here		Directions		yes	hier	
+da drüben		adverb		over there		Directions		yes	da drüben	
+Mama	meine Mama	noun	f	my mum / my mummy		People	plain article form: die Mama	yes	meine mama	
+Papa	mein Papa	noun	m	my dad / my daddy		People	plain article form: der Papa	yes	mein papa	
+Schwester	meine Schwester	noun	f	my sister		People	plain article form: die Schwester; plural: die Schwestern	yes	meine schwester	
+Bruder	mein Bruder	noun	m	my brother		People	plain article form: der Bruder; plural: die Brueder (Brüder)	yes	mein bruder	
+Tochter	meine Tochter	noun	f	my daughter		People	plain article form: die Tochter; plural: die Toechter (Töchter)	yes	meine tochter	
+Sohn	mein Sohn	noun	m	my son	zorn'	People	plain article form: der Sohn; plural: die Soehne (Söhne)	yes	mein sohn	
+Mann	mein Mann	noun	m	my husband		People	der Mann on its own means the man; plural: die Maenner (Männer)	yes	mein mann	
+Frau	meine Frau	noun	f	my wife		People	die Frau on its own means the woman; plural: die Frauen	yes	meine frau	
+Kind	das Kind	noun	n	the child		People	plural: die Kinder	yes	kind	
+freut mich		phrase		nice to meet you		Introductions	literally 'pleases me'; short for es freut mich	yes	freut mich	
+ich komme aus Berlin		phrase		I come from Berlin		Introductions	pattern: ich komme aus plus a place	yes	ich komme aus Berlin	
+ich bin David, und du?		phrase		I am David, and you?		Introductions	du is informal; use und Sie? when being formal	yes	ich bin David, und du?	
+bitte		phrase		please		Introductions	also means 'you are welcome' and 'here you are'	yes	bitte	
+danke		phrase		thank you		Introductions		yes	danke	
+tschüss		phrase		bye (informal)		Introductions		yes	tschüss	
+hallo		phrase		hello		Introductions		yes	hallo	
+ja		phrase		yes		Introductions		yes	ja	
+nein		phrase		no		Introductions		yes	nein	
+der		article	m	the (masculine)				no	der	
+die		article	f	the (feminine, and all plurals)				no	die	
+das		article	n	the (neuter)				no	das	
+ein		article		a / an (before masculine and neuter)				no	ein	
+eine		article		a / an (before feminine)				no	eine	
+ich		pronoun		I				no	ich	
+du		pronoun		you (singular, informal)				no	du	
+er		pronoun		he				no	er	
+sie		pronoun		she / they			lowercase sie; capitalised Sie means you, formal	no	sie / Sie (formal)	
+Sie		pronoun		you (formal)			always capitalised	no	sie / Sie (formal)	
+wir		pronoun		we				no	wir	
+mein		possessive		my (before masculine and neuter)				no	mein / meine	
+meine		possessive		my (before feminine and plural)				no	mein / meine	
+dein		possessive		your (before masculine and neuter)				no	dein / deine	
+deine		possessive		your (before feminine and plural)				no	dein / deine	
+wo		interrogative		where	v-oh			no	wo	
+und		conjunction		and				no	und	
+aber		conjunction		but				no	aber	
+denn		conjunction		because / for			keeps normal word order, unlike weil	no	denn	
+weil		conjunction		because			sends the verb to the end of the clause	no	weil	
+dass		conjunction		that			sends the verb to the end of the clause	no	dass	
+wenn		conjunction		if / when				no	wenn	
+obwohl		conjunction		although			sends the verb to the end of the clause	no	obwohl	
+oder		conjunction		or				no	oder	
+ist		verb		is (he/she/it form of sein)				no	ist	
+bist		verb		are (you form of sein)				no	bist	
+in		preposition		in / into				no	in	
+auf		preposition		on / onto				no	auf	
+an		preposition		on / at (a vertical surface or an edge)				no	an	
+mit		preposition		with				no	mit	
+von		preposition		from / of				no	von	
+für		preposition		for				no	für	
+zu		preposition		to / at				no	zu	
+bei		preposition		at / by / with				no	bei	
+nach		preposition		after / to				no	nach	
+seit		preposition		since / for (a period of time)				no	seit	
+heute		adverb		today				no	heute	
+morgen		adverb		tomorrow			lowercase morgen is tomorrow; capitalised der Morgen is the morning	no	morgen	
+gestern		adverb		yesterday				no	gestern	
+dort		adverb		there				no	dort	
+sehr		adverb		very				no	sehr	
+nicht		adverb		not				no	nicht	
+schon		adverb		already			contrast schoen (schön), which means beautiful	no	schon	

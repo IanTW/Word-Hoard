@@ -1,0 +1,26 @@
+# word-hoard dependencies.
+#
+# Versions are intentionally left open until the first successful install on
+# this machine, at which point they should be pinned from `pip freeze`. Pinning
+# a guessed version is worse than not pinning, because it looks authoritative.
+
+# Makes Python trust the Windows certificate store. Required on this machine
+# because HTTPS is intercepted and re-signed by Netskope, which browsers accept
+# (the root CA is in the Windows store) but Python via certifi does not. Without
+# it, any HTTPS call fails with CERTIFICATE_VERIFY_FAILED. Bootstrap install:
+#   pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pip-system-certs
+# See the Environment section of CLAUDE.md.
+pip-system-certs
+
+# FSRS reference implementation. Depended on rather than reimplemented from the
+# paper: the algorithm is the core value of this project and a subtle
+# reimplementation bug would be invisible for months. Needed from slice step 3.
+py-fsrs
+
+# Deliberately NOT listed yet: fastapi, uvicorn.
+#
+# Nothing in wordhoard/ imports a web framework, and nothing needs to until
+# slice step 6 (the due-queue interface). The schema, the review history and the
+# scheduler are the long-lived assets; the web layer is the most replaceable
+# part of the system, so it is added last and kept at the edge. Adding it now
+# would only invite it into the core. See docs/OVERVIEW.md.
