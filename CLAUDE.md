@@ -332,10 +332,8 @@ about what is missing.
 Windows 10 Pro, Python project, developed in VS Code via
 `word-hoard.code-workspace`.
 
-**The git repo is local only. There is no `origin` and no remote is planned.**
-Wrap Up step 5 (push) therefore does not apply: stop after the commit in step 4
-and say that push was skipped for that reason, rather than trying to create or
-guess a remote.
+**Remote:** `origin` is `https://github.com/IanTW/Word-Hoard.git`, branch
+`master`. Wrap Up step 5 (push) applies. Never force-push.
 
 Machine-specific trap, carried over from the originating project on this same
 machine:
