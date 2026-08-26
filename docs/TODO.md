@@ -4,10 +4,16 @@ Closed items move to [TODO_archive.md](TODO_archive.md) verbatim, they are not d
 
 ## Focus
 
-**Slice step 3: the FSRS scheduler, with the learning-steps state machine in
-front of it.** Steps 1 and 2 are done. The live database at `word-hoard.db`
-holds 117 lexical items, 74 of them scheduled for learner Ian at pristine
-defaults, so there is a real due queue for the scheduler to read.
+**Slice step 4: the typing exercise.** Steps 1 to 3 are done. The live database
+at `word-hoard.db` holds 117 lexical items, 74 of them scheduled for learner Ian
+at pristine defaults, and `wordhoard/scheduler.py` turns those into a due queue
+and applies ratings to them. What is missing is the thing that shows a person a
+prompt and reads their answer. Step 4a-i, the rating a right-word-wrong-gender
+answer feeds in, has to be decided as part of building it.
+
+Dependencies now live in a project venv at `.venv`, created 2026-08-26. Point
+VS Code at `.venv/Scripts/python.exe`, or the `fsrs` import will fail.
+
 The stack decision gates step 6 only, not steps 3 to 5, because the scheduler is
 framework-free domain logic. Nothing in `wordhoard/` imports a web framework and
 nothing should until step 6.
@@ -37,8 +43,11 @@ verify cycle exists would write false lapses into an append-only log. See
 - [ ] Content sourcing beyond the first hand-entered batch: Tatoeba for
       sentence pools, selective LLM generation for typing sentences built
       around a specific word being drilled.
-- [ ] Where the learning-step durations live. Default assumption is a module
-      constant, not a settings table. Confirm when step 3 is built.
+- [x] Where the learning-step durations live. **DECIDED 2026-08-26: module
+      constants** `LEARNING_STEPS` and `RELEARNING_STEPS` in
+      `wordhoard/scheduler.py`, passed into the library's scheduler rather than
+      driving a state machine of our own. Not a settings table: a two-person
+      tool does not need a UI for a number that changes once a year.
 - [x] CHECK constraints. **DECIDED:** added on `item_state.state` and
       `review_log.rating`, which are closed sets fixed by the state machine
       and by FSRS. Deliberately NOT added on `content_type` or
@@ -106,11 +115,24 @@ real review sessions.
       `sentence_lexical_items`. **After step 6**, not now: sentences are
       outside the vertical slice. Drafted early only because the mindmap
       gives the sentence-to-word links for free.
-- [ ] 3. Implement the FSRS scheduler. Use or closely follow `py-fsrs` rather
-      than reimplementing from the paper. Include the learning-steps state
-      machine that sits in front of it.
-- [ ] 3a. Make sure `learner_languages.target_retention` actually reaches the
-      scheduler. Do not hardcode 0.9.
+- [x] 3. Implement the FSRS scheduler. `wordhoard/scheduler.py`, built on the
+      `fsrs` PyPI package (note: NOT `py-fsrs`, which is only the repo name and
+      does not install). **The learning-steps state machine was not written.**
+      `fsrs` 6.x implements it: `Scheduler(learning_steps=...)` and `Card.step`.
+      Our step durations are module constants passed in. Verified on a scratch
+      copy of the live database: a new item walks 10 minutes, graduates to 2
+      days, then 14 and 49; failing a graduated item moves it to `relearning`
+      and increments `lapses`, while failing one still in learning does not;
+      `review_log` gained 6 append-only rows carrying NULL before-state on
+      first review and real elapsed and scheduled days thereafter.
+- [x] 3a. Make sure `learner_languages.target_retention` actually reaches the
+      scheduler. Do not hardcode 0.9. Verified by measurement on one identical
+      card: retention 0.80 gave a 109 day interval, 0.90 gave 32 days, 0.99
+      gave 2 days. The column is the single biggest lever on daily workload.
+- [x] 3b. Due queue with the daily new limit. Verified: 10 new items offered on
+      an unreviewed database, 0 offered once 10 had been introduced, and 10
+      again the following day. The cap counts items whose FIRST review was
+      today, not reviews today, which are different numbers.
 - [ ] 4. Build the typing exercise: prompt in English, learner types the
       German. Expected answer is `answer_form` where set, otherwise `lemma`.
       Implement that fallback in one place.

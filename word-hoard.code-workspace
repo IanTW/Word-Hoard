@@ -4,5 +4,16 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		// Point VS Code at the project venv rather than whatever interpreter
+		// the machine defaults to. On the original machine that default was
+		// Anaconda base, which does not have fsrs installed, so scheduler.py
+		// showed unresolved-import errors and would not run.
+		//
+		// Note this is only a DEFAULT. Once an interpreter has been picked
+		// explicitly for the workspace, that choice wins and this line is
+		// ignored. It exists for a fresh clone, where .venv has just been
+		// created and nobody has chosen anything yet.
+		"python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe"
+	}
 }

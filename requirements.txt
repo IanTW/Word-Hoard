@@ -1,21 +1,43 @@
 # word-hoard dependencies.
 #
-# Versions are intentionally left open until the first successful install on
-# this machine, at which point they should be pinned from `pip freeze`. Pinning
-# a guessed version is worse than not pinning, because it looks authoritative.
+# Pinned from `pip freeze` in the project venv on 2026-08-26, which is the first
+# successful install on this machine. Before that the versions were deliberately
+# left open, because a guessed pin looks authoritative and is not.
+#
+# Set up from scratch:
+#   python -m venv .venv
+#   .venv/Scripts/python.exe -m pip install \
+#       --trusted-host pypi.org --trusted-host files.pythonhosted.org \
+#       -r requirements.txt
+#
+# The --trusted-host flags are the bootstrap for the Netskope problem described
+# below. They are needed on the first install only, because pip itself has to
+# reach pypi.org before pip-system-certs can be installed to fix it.
 
 # Makes Python trust the Windows certificate store. Required on this machine
 # because HTTPS is intercepted and re-signed by Netskope, which browsers accept
 # (the root CA is in the Windows store) but Python via certifi does not. Without
-# it, any HTTPS call fails with CERTIFICATE_VERIFY_FAILED. Bootstrap install:
-#   pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pip-system-certs
+# it, any HTTPS call fails with CERTIFICATE_VERIFY_FAILED.
 # See the Environment section of CLAUDE.md.
-pip-system-certs
+pip_system_certs==5.3
 
 # FSRS reference implementation. Depended on rather than reimplemented from the
 # paper: the algorithm is the core value of this project and a subtle
-# reimplementation bug would be invisible for months. Needed from slice step 3.
-py-fsrs
+# reimplementation bug would be invisible for months.
+#
+# Note the distribution name. The project is called py-fsrs on GitHub, but the
+# package on PyPI is plain `fsrs`, and `pip install py-fsrs` fails with "no
+# matching distribution found" rather than anything that hints at the real name.
+#
+# 6.x matters: this version implements learning steps and relearning steps
+# itself, via Scheduler(learning_steps=...) and Card.step. The project had
+# planned to write that state machine by hand in front of FSRS, and no longer
+# does. Do not downgrade below 6 without restoring it. See wordhoard/scheduler.py.
+fsrs==6.3.2
+
+# Pulled in by fsrs. Listed because pinning a transitive dependency is what
+# makes the pin reproducible.
+typing_extensions==4.16.0
 
 # Deliberately NOT listed yet: fastapi, uvicorn.
 #

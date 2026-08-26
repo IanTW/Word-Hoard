@@ -156,7 +156,7 @@ updated and never deleted, and each row stores the scheduler inputs as they
 stood before that review was applied, which is what makes the history
 replayable.
 
-### Learning steps sit in front of FSRS, not inside it
+### Learning steps are configured, not built
 
 FSRS interval mathematics handles a mature item well and a brand-new or
 just-failed item badly. Every real implementation solves this the same way, by
@@ -164,10 +164,21 @@ layering short fixed delays in front of the long-term schedule: see this again
 in one minute, then in ten minutes, and only then let the real scheduler take
 over. Anki and RemNote both do this.
 
-That means a small state machine ahead of the FSRS call, which is what the
-`state` and `step_index` columns on `item_state` are for. It emphatically does
-not mean modifying FSRS itself. The step durations have no configuration home in
-the schema, which is fine for a personal tool; they live as a module constant.
+The project planned to write that small state machine by hand, ahead of the
+FSRS call, which is what the `state` and `step_index` columns on `item_state`
+were designed to hold. Building it turned out to be unnecessary. The `fsrs`
+library implements the steps itself from version 6: the scheduler takes
+`learning_steps` and `relearning_steps` as configuration, and the card carries
+its own step index. Measured against 6.3.2, a fresh card answered correctly goes
+ten minutes, then graduates to two days, and a failed mature card drops back to
+a ten minute step. That is exactly the machine that was going to be written.
+
+So the durations remain this project's choice and live as a module constant,
+while the machine that walks them belongs to the library. The two schema columns
+still earn their place, because the card has to be persisted between sessions
+and those are the fields that carry it. The general lesson is worth stating
+plainly: a dependency's feature set is a fact to be checked at the moment of
+use, not inherited from whatever was true when the design was written.
 
 ### One memory state per item, not one per exercise type
 
