@@ -4,12 +4,20 @@ Closed items move to [TODO_archive.md](TODO_archive.md) verbatim, they are not d
 
 ## Focus
 
-**Slice step 2: review the drafted German batch, then import it.** The draft is
-in `data/review/german_draft.tsv`. Step 1 is done and the schema now carries
-`translation_en`, `pronunciation` and `category` on `lexical_items`.
+**Slice step 3: the FSRS scheduler, with the learning-steps state machine in
+front of it.** Steps 1 and 2 are done. The live database at `word-hoard.db`
+holds 117 lexical items, 74 of them scheduled for learner Ian at pristine
+defaults, so there is a real due queue for the scheduler to read.
 The stack decision gates step 6 only, not steps 3 to 5, because the scheduler is
 framework-free domain logic. Nothing in `wordhoard/` imports a web framework and
 nothing should until step 6.
+
+Content volume is knowingly thin: 74 drillable words at the default 10 new per
+day is about a week of fresh material. Scaling it is a data task that step 2e
+has now made cheap, and it is deliberately queued behind step 6 rather than
+done now, because generating content the learner cannot verify before the
+verify cycle exists would write false lapses into an append-only log. See
+**Content quality** below.
 
 ---
 
@@ -77,13 +85,22 @@ real review sessions.
       surrounding single quotes dropped, and the `changes` column cleared as
       a sign-off. No German content was disputed. Edits folded back into
       `scripts/draft_german.py` and regenerated.
-- [ ] 2d-ii. Delete `data/review/german_draft revised.tsv` once the folded
-      edits are confirmed, so there is one draft rather than two. Waiting on
-      the user; it is their file.
-- [ ] 2e. Import script: reviewed TSV to `lexical_items`, and create
+- [x] 2d-ii. Delete `data/review/german_draft revised.tsv` once the folded
+      edits are confirmed, so there is one draft rather than two. Confirmed by
+      the user and deleted in commit `93d5eed`, still recoverable from
+      `00c9eb9`.
+- [x] 2e. Import script: reviewed TSV to `lexical_items`, and create
       `item_state` rows only for rows marked `drillable=yes`. Function words
       are stored as reference content but never enter the due queue, because
       an English prompt of "the" has three German answers.
+      `scripts/import_lexical_items.py`, run 2026-08-25. Verified against the
+      live database: 117 items, 74 scheduler rows, 43 stored as reference and
+      unscheduled, 0 empty strings where NULL was meant, 0 gendered nouns
+      without an `answer_form`, 0 scheduler rows pointing at absent content.
+      Re-run reports 117 unchanged and creates no new scheduler rows.
+      Separately verified that a content edit updates `lexical_items` while
+      seeded scheduling progress (state `review`, stability 12.5, 7 reps,
+      1 lapse, a set `due_at`) survives the re-import untouched.
 - [ ] 2f. Import the 8 drafted sentences from
       `data/review/german_sentences_draft.tsv` into `sentences` and
       `sentence_lexical_items`. **After step 6**, not now: sentences are
@@ -146,13 +163,21 @@ Ordered, but not started until step 6 has real usage behind it.
 
 ## Housekeeping
 
-- [ ] Delete `handover.md` once the first commit has landed, so it stays
+- [x] Delete `handover.md` once the first commit has landed, so it stays
       recoverable from git history. Its content now lives in `CLAUDE.md`,
-      `docs/OVERVIEW.md`, `schema.sql`, this file and `memory/`.
+      `docs/OVERVIEW.md`, `schema.sql`, this file and `memory/`. Deleted in
+      commit `93d5eed`, recoverable from `00c9eb9`.
 - [x] Add `pip-system-certs` to `requirements.txt` when that file is first
       created. See the Environment section of `CLAUDE.md` for why.
 - [ ] Pin `requirements.txt` versions from `pip freeze` after the first
       successful install on this machine. Left open deliberately: a guessed pin
       looks authoritative and is not.
-- [ ] Run the real `python scripts/init_db.py --learner "NAME" --language de`
-      against the project root. Only ever run against a scratch file so far.
+- [x] Run the real `python scripts/init_db.py --learner "NAME" --language de`
+      against the project root. Run 2026-08-25 as `--learner "Ian"`: created
+      `word-hoard.db` with 9 tables, 2 languages seeded, learner Ian at id 1.
+      The file is gitignored; the versioned artifact is the plain-text export.
+- [ ] Decide what happens to `word-hoard.db` if it is ever lost before the
+      plain-text export exists. Right now the content is fully rebuildable
+      from `data/review/german_draft.tsv` by re-running the import, but
+      `review_log` is not rebuildable by anything. That gap closes when the
+      export is built, and until then it is a real single point of failure.
