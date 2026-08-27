@@ -32,9 +32,18 @@ scheduling to aim at a target retention rate.
   `RELEARNING_STEPS` are module constants in `wordhoard/scheduler.py`, passed
   into the library. Not a settings table.
 - **Feed `learner_languages.target_retention` in as `desired_retention`.** Never
-  hardcode 0.9. Measured on the same card, retention 0.8 gave a 109 day
+  hardcode a literal. Measured on the same card, retention 0.8 gave a 109 day
   interval, 0.9 gave 32 days and 0.99 gave 2 days, so this column is the single
   biggest lever on daily workload.
+- **The default is 0.95, not the FSRS reference 0.9, and the interval ceiling is
+  365 days rather than the library's hundred years.** Both changed 2026-08-27.
+  At 0.9 with no ceiling, a word answered correctly seven times running is not
+  shown again for 1348 days, and over twenty years by the ninth review. FSRS is
+  answering its own question correctly there, namely when recall probability
+  falls to the target. The point is that **retrievability on demand is not the
+  objective for a language somebody intends to speak**, so this project
+  deliberately optimises for something other than the fewest possible reviews.
+  Do not "restore the FSRS defaults" as a tidying exercise.
 - **`item_state.state` carries a fourth value the library has no notion of.**
   `new` means an item that has been imported and scheduled but never reviewed;
   `fsrs.State` has only Learning, Review and Relearning, because a card there

@@ -4,12 +4,15 @@ Closed items move to [TODO_archive.md](TODO_archive.md) verbatim, they are not d
 
 ## Focus
 
-**Slice step 4: the typing exercise.** Steps 1 to 3 are done. The live database
-at `word-hoard.db` holds 117 lexical items, 74 of them scheduled for learner Ian
-at pristine defaults, and `wordhoard/scheduler.py` turns those into a due queue
-and applies ratings to them. What is missing is the thing that shows a person a
-prompt and reads their answer. Step 4a-i, the rating a right-word-wrong-gender
-answer feeds in, has to be decided as part of building it.
+**Slice step 5: wire the typing exercise to the scheduler.** Steps 1 to 4 are
+done. The live database at `word-hoard.db` holds 117 lexical items, 74 of them
+scheduled for learner Ian at pristine defaults and never yet reviewed.
+`wordhoard/scheduler.py` builds the due queue and applies ratings;
+`wordhoard/exercises.py` grades a typed answer and returns a rating. Step 5 is
+the loop that joins them: take a due item, show the English prompt, read the
+answer, grade it, append to `review_log` and update `item_state`. Both halves
+have been driven end to end against a scratch copy already, so step 5 is
+assembly rather than discovery.
 
 Dependencies now live in a project venv at `.venv`, created 2026-08-26. Point
 VS Code at `.venv/Scripts/python.exe`, or the `fsrs` import will fail.
@@ -129,20 +132,70 @@ real review sessions.
       scheduler. Do not hardcode 0.9. Verified by measurement on one identical
       card: retention 0.80 gave a 109 day interval, 0.90 gave 32 days, 0.99
       gave 2 days. The column is the single biggest lever on daily workload.
+- [x] 3c. Retention and interval ceiling. **DECIDED 2026-08-27, prompted by the
+      user questioning whether a 227 day interval could possibly be right.** It
+      was not. Measured at the then-current retention of 0.9 with no ceiling, a
+      word answered correctly every time was scheduled 163 days out on its
+      fifth review, 498 on its sixth, **1348 on its seventh** and over twenty
+      years by its ninth. FSRS is not wrong there; it answers when recall
+      probability falls to the target. But retrievability on demand is not the
+      objective for a language somebody means to speak.
+      Two changes: `target_retention` default raised 0.9 to 0.95 in
+      `schema.sql` and updated on the live row for Ian, and
+      `MAXIMUM_INTERVAL_DAYS` capped at 365 in `wordhoard/scheduler.py`.
+      Verified against the live database: the ladder now runs 1, 3, 8, 19, 43,
+      89, 175, 325 days and meets the 365 cap on the tenth review.
+      Costs roughly 1.5x the reviews. Still a starting value, not a measured
+      one; revisit once `review_log` can support a parameter fit.
+      A comment in `scheduler.py` claiming the uncapped default was deliberate
+      because clipping means distrusting the model has been retracted in place:
+      capping expresses a different objective, not a lack of confidence.
 - [x] 3b. Due queue with the daily new limit. Verified: 10 new items offered on
       an unreviewed database, 0 offered once 10 had been introduced, and 10
       again the following day. The cap counts items whose FIRST review was
       today, not reviews today, which are different numbers.
-- [ ] 4. Build the typing exercise: prompt in English, learner types the
+- [x] 4. Build the typing exercise: prompt in English, learner types the
       German. Expected answer is `answer_form` where set, otherwise `lemma`.
-      Implement that fallback in one place.
+      Implement that fallback in one place. `wordhoard/exercises.py`, with the
+      fallback in `expected_answer()` and nowhere else. Verified by a 24 case
+      table covering determiner errors, capitalisation, transliteration,
+      whitespace, verbs, adjectives and phrases: 24 of 24 as expected.
+- [x] 4c. Accept `ae`, `oe`, `ue` and `ss` for `ä`, `ö`, `ü` and `ß`, since the
+      learner has no German keyboard. Folding is applied to both sides, so
+      `Baeckerei` matches and `Backerei` (umlaut simply dropped) does not.
+      Feedback always shows the properly spelled form. Affects 10 of the 74
+      drillable answers, measured 2026-08-26.
+- [x] 4d. Accept a determiner that disagrees with the drilled form but agrees
+      with the stored gender: `der Bruder` against a drilled `mein Bruder` is
+      correct German and demonstrates exactly the knowledge being tested.
+      Rated Good with a note naming the drilled form. Grading it "wrong gender"
+      would have been a lie about the one thing this exercise is for.
 - [x] 4a. How strictly to grade the determiner. **DECIDED 2026-08-23: grade
       the determiner and the noun separately**, so the feedback can say
       "right word, wrong gender" rather than a flat wrong. Chosen as the
       better learning signal.
-- [ ] 4a-i. Follow-on, undecided: what rating a right-word-wrong-gender
-      answer feeds into FSRS. It is not a clean 1 (again) and not a 3
-      (good). Decide when step 4 is built, and record the reasoning.
+- [x] 4a-i. What rating a right-word-wrong-gender answer feeds into FSRS.
+      **DECIDED 2026-08-26 by measurement, and against my own first
+      recommendation.** On a mature item (stability 90 days, retention 0.9,
+      fuzzing off): Again drops stability to 3.6 and returns it in 10 minutes;
+      Hard raises it to 172.7 and returns it in 173 days; Good raises it to
+      227.5 and returns it in 227 days. Hard is therefore not a middle course,
+      it is a near-miss of Good, so rating a gender error Hard would tell the
+      learner about it and then never drill it again.
+      **A wrong or missing determiner is Again (1).** The item being scheduled
+      is `das Haus`, not `Haus`, and it was not produced.
+      **Capitalisation alone, with word and gender both right, is Hard (2).**
+      Deliberate exception: noun capitalisation is one systematic rule rather
+      than 42 separate facts, so a missed shift key says nothing about whether
+      this word is known, and destroying 96% of an item's stability over it
+      would make the tool punishing to use.
+- [ ] 4a-ii. The grader never produces Easy (4), because a typing exercise
+      cannot observe effort: a correct answer typed slowly and one typed
+      instantly are identical to it. The consequence is real, in that intervals
+      for genuinely easy items grow more slowly than an Anki user pressing Easy
+      would see. If that becomes annoying the fix is an explicit "that was
+      easy" control in the step 6 interface, not an inference in the grader.
+      Revisit after real review sessions, not before.
 - [x] 4b. Whether capitalisation is graded. **DECIDED 2026-08-23: yes,
       enforced.** German nouns are capitalised and the point is to learn it
       correctly. Applies to the noun itself; see 4a for how the determiner

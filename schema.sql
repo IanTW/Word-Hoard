@@ -41,9 +41,23 @@ CREATE TABLE learner_languages (
     -- guess, not a measured value; revisit once real sessions have been run.
     daily_new_limit INTEGER NOT NULL DEFAULT 10,
     -- Desired probability of recall at review time, fed straight into FSRS as
-    -- its desired-retention parameter. 0.9 is the FSRS reference default.
-    -- This column must actually reach the scheduler; do not hardcode 0.9.
-    target_retention REAL NOT NULL DEFAULT 0.9,
+    -- its desired-retention parameter. This column must actually reach the
+    -- scheduler; do not hardcode a literal anywhere.
+    --
+    -- 0.95 rather than the FSRS reference default of 0.9. Changed 2026-08-27
+    -- after measuring what 0.9 actually produces on this content: a word
+    -- answered correctly seven times running is not shown again for 1348 days,
+    -- and by the ninth review the interval is over twenty years. FSRS is not
+    -- wrong there, it is answering its own question accurately, namely when
+    -- recall probability falls to the target. But retrievability at 90% on
+    -- demand is not the objective for a language somebody intends to speak, and
+    -- reviews are cheap at this corpus size. At 0.95 the same ladder runs
+    -- 3, 8, 19, 43, 89, 175, 325 days, which reaches a year after roughly two
+    -- years of study. Costs about 1.5x the reviews.
+    --
+    -- Still a starting value rather than a measured one. Revisit once review_log
+    -- holds enough real history to fit parameters against.
+    target_retention REAL NOT NULL DEFAULT 0.95,
     PRIMARY KEY (learner_id, language_code)
 );
 

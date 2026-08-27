@@ -119,8 +119,10 @@ def add_learner(
     another's. There is no authentication anywhere in this system by design.
 
     daily_new_limit and target_retention are left at their schema defaults (10
-    and 0.9). Both are starting guesses rather than measured values and are
-    expected to be tuned once real sessions have been run.
+    and 0.95). Both are starting guesses rather than measured values and are
+    expected to be tuned once real sessions have been run. The retention default
+    is deliberately above the FSRS reference value of 0.9; see the comment on
+    the column in schema.sql for the measurements behind that.
     """
     with conn:
         cursor = conn.execute(

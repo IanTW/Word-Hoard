@@ -55,12 +55,24 @@ LEARNING_STEPS = (timedelta(minutes=1), timedelta(minutes=10))
 # failed. Shorter, because the memory is damaged rather than absent.
 RELEARNING_STEPS = (timedelta(minutes=10),)
 
-# Ceiling on any scheduled interval, in days. 36500 is a hundred years, the fsrs
-# default, and is effectively "no ceiling". Left at the default deliberately: a
-# lower cap is a way of saying you do not trust the model's long intervals, and
-# if that turns out to be true the honest fix is refitting the parameters
-# against real review history rather than clipping the output.
-MAXIMUM_INTERVAL_DAYS = 36500
+# Ceiling on any scheduled interval, in days. One year.
+#
+# The fsrs default is 36500, a hundred years, which is effectively no ceiling.
+# This file previously carried a comment claiming that leaving it uncapped was
+# deliberate, on the grounds that clipping the output means distrusting the
+# model. That reasoning was wrong and is retracted. The model is not being
+# distrusted: it answers accurately when recall probability will fall to the
+# retention target. Capping expresses a DIFFERENT OBJECTIVE from the one FSRS
+# optimises, which is a legitimate thing to have.
+#
+# The objective here is that a language stays available rather than merely
+# retrievable. Measured 2026-08-27 at the old retention of 0.9, an item answered
+# correctly seven times running was scheduled 1348 days out, and by the ninth
+# review over twenty years. Raising retention to 0.95 fixes the shape of that
+# curve; this cap is the backstop that catches any individual word whose
+# stability still runs away. It does nothing to the early curve, where every
+# interval is well under a year.
+MAXIMUM_INTERVAL_DAYS = 365
 
 # Interval fuzzing spreads scheduled due dates by a small random amount so that
 # a batch of items introduced on the same day does not come back as a single
@@ -113,7 +125,7 @@ def scheduler_for(
     """Build the FSRS scheduler configured for one learner in one language.
 
     The desired retention comes from learner_languages.target_retention rather
-    than from a literal 0.9. This is slice item 3a, and it is the whole reason
+    than from any literal here. This is slice item 3a, and it is the whole reason
     the column exists: retention is the one FSRS knob a learner has a real
     opinion about, since it trades daily workload against how much they forget.
     Hardcoding the default here would silently make the column decorative.
