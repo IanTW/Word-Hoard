@@ -108,6 +108,42 @@ def seed_languages(conn: sqlite3.Connection) -> int:
     return cursor.rowcount
 
 
+def find_learner(
+    conn: sqlite3.Connection,
+    display_name: str | None = None,
+) -> tuple[int, str]:
+    """Resolve which learner a script is acting on. Returns (id, display_name).
+
+    With no name given, falls back to the sole learner if there is exactly one,
+    which is the normal case for this tool. Ambiguity is an error rather than a
+    guess, because acting against the wrong learner id writes review history to
+    the wrong person and would stay invisible until their queue filled with
+    someone else's words.
+
+    Lives here rather than in a script because two scripts already need it, and
+    a second copy is how the two would eventually disagree about what an absent
+    --learner means.
+    """
+    if display_name:
+        rows = conn.execute(
+            "SELECT id, display_name FROM learners WHERE display_name = ?",
+            (display_name,),
+        ).fetchall()
+        if not rows:
+            raise ValueError(f"no learner named {display_name!r}")
+        if len(rows) > 1:
+            raise ValueError(f"more than one learner named {display_name!r}")
+        return rows[0]["id"], rows[0]["display_name"]
+
+    rows = conn.execute("SELECT id, display_name FROM learners ORDER BY id").fetchall()
+    if not rows:
+        raise ValueError("no learners exist; run scripts/init_db.py first")
+    if len(rows) > 1:
+        names = ", ".join(repr(row["display_name"]) for row in rows)
+        raise ValueError(f"more than one learner exists ({names}); pass --learner NAME")
+    return rows[0]["id"], rows[0]["display_name"]
+
+
 def add_learner(
     conn: sqlite3.Connection,
     display_name: str,

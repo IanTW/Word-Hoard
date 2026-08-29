@@ -4,15 +4,16 @@ Closed items move to [TODO_archive.md](TODO_archive.md) verbatim, they are not d
 
 ## Focus
 
-**Slice step 5: wire the typing exercise to the scheduler.** Steps 1 to 4 are
-done. The live database at `word-hoard.db` holds 117 lexical items, 74 of them
-scheduled for learner Ian at pristine defaults and never yet reviewed.
-`wordhoard/scheduler.py` builds the due queue and applies ratings;
-`wordhoard/exercises.py` grades a typed answer and returns a rating. Step 5 is
-the loop that joins them: take a due item, show the English prompt, read the
-answer, grade it, append to `review_log` and update `item_state`. Both halves
-have been driven end to end against a scratch copy already, so step 5 is
-assembly rather than discovery.
+**Step 6, the minimal interface. But first: use the thing.** Steps 1 to 5 are
+done and the loop closes. `.venv/Scripts/python.exe scripts/review.py` runs a
+real session against `word-hoard.db` today.
+
+The project's standing rule is that nothing outside the slice begins until the
+loop has been used for real review sessions, and `review_log` is still empty.
+So the next thing is not code. It is sitting down and doing a session, because
+every remaining decision (whether 0.95 is right, whether 10 new a day is right,
+whether the feedback wording helps, whether Easy needs a control) is waiting on
+evidence that only real use produces.
 
 Dependencies now live in a project venv at `.venv`, created 2026-08-26. Point
 VS Code at `.venv/Scripts/python.exe`, or the `fsrs` import will fail.
@@ -200,8 +201,39 @@ real review sessions.
       enforced.** German nouns are capitalised and the point is to learn it
       correctly. Applies to the noun itself; see 4a for how the determiner
       is scored alongside it.
-- [ ] 5. Wire typing to the scheduler: read due items from `item_state`, grade
+- [x] 5. Wire typing to the scheduler: read due items from `item_state`, grade
       the response, append to `review_log`, update `item_state`.
+      `wordhoard/session.py` holds the rules and `scripts/review.py` holds the
+      terminal input and output, split so step 6 reuses the rules rather than
+      restating them. Verified on scratch copies: 8 answers written to
+      `review_log` and to `item_state`, a failed item correctly reappearing one
+      minute later inside the same session, `--limit` respected, `:q` and EOF
+      both ending cleanly with everything already answered kept, and umlauts
+      printing correctly with `PYTHONIOENCODING` unset.
+- [x] 5b. **Introduce new items before testing them.** Found by the first real
+      session on 2026-08-27, which produced 9 Again out of 17 reviews. That 53%
+      measured nothing about German or about the grader: every one of those
+      items was being demanded back by an app that had never shown it. A
+      scheduler schedules the REVIEW of something already learned, and nothing
+      in the system was doing the learning. A new item now shows its answer and
+      asks for it to be copied; every encounter after the first is a real test.
+      Recorded as `exercise_type = 'introduction'` at a fixed rating of 3,
+      which is exactly what leaving that column unconstrained was for.
+      Verified: one log row per introduction however many retries it took,
+      retries write nothing, quitting mid-introduction leaves the item `new`
+      so it is taught properly next time, and an introduced item comes back as
+      a test rather than a second introduction.
+- [x] 5c. **Reset the database**, since those 9 false lapses would otherwise sit
+      permanently in an append-only log that FSRS later fits parameters
+      against. Done 2026-08-29: rebuilt from `schema.sql` and re-imported from
+      the TSV, giving 117 items, 74 scheduler rows, 0 reviews, all pristine.
+      The fresh database inherited `target_retention` 0.95 from the schema
+      default, which confirms that change reaches new databases and not only
+      the row that was updated by hand. The discarded copy is in the session
+      scratchpad, not in the repository.
+- [x] 5a. `find_learner` moved from `scripts/import_lexical_items.py` into
+      `wordhoard/db.py`, because a second script needed it and the project's own
+      rule is one definition. Import script re-verified after the move.
 - [ ] 6. Minimal due-queue interface. What is due, answer it, next item. No
       stats dashboard yet.
 

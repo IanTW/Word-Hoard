@@ -156,34 +156,6 @@ def read_rows(tsv_path: Path) -> list[dict[str, str]]:
     return rows
 
 
-def resolve_learner(conn: sqlite3.Connection, display_name: str | None) -> tuple[int, str]:
-    """Find the learner whose scheduler rows are being created.
-
-    With no name given, fall back to the sole learner if there is exactly one,
-    which is the normal case for this tool. Ambiguity is an error rather than a
-    guess: writing scheduler rows against the wrong person's id would be
-    invisible until their due queue filled up with someone else's words.
-    """
-    if display_name:
-        rows = conn.execute(
-            "SELECT id, display_name FROM learners WHERE display_name = ?",
-            (display_name,),
-        ).fetchall()
-        if not rows:
-            raise ValueError(f"no learner named {display_name!r}")
-        if len(rows) > 1:
-            raise ValueError(f"more than one learner named {display_name!r}")
-        return rows[0]["id"], rows[0]["display_name"]
-
-    rows = conn.execute("SELECT id, display_name FROM learners ORDER BY id").fetchall()
-    if not rows:
-        raise ValueError("no learners exist; run scripts/init_db.py first")
-    if len(rows) > 1:
-        names = ", ".join(repr(row["display_name"]) for row in rows)
-        raise ValueError(f"more than one learner exists ({names}); pass --learner NAME")
-    return rows[0]["id"], rows[0]["display_name"]
-
-
 def blank_to_none(value: str) -> str | None:
     """Turn an empty TSV cell into SQL NULL.
 
@@ -346,7 +318,7 @@ def main() -> int:
     conn = db.connect(db_path)
 
     try:
-        learner_id, learner_name = resolve_learner(conn, args.learner)
+        learner_id, learner_name = db.find_learner(conn, args.learner)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
