@@ -1,8 +1,9 @@
 # word-hoard dependencies.
 #
-# Pinned from `pip freeze` in the project venv on 2026-08-26, which is the first
-# successful install on this machine. Before that the versions were deliberately
-# left open, because a guessed pin looks authoritative and is not.
+# Pinned from `pip freeze` in the project venv. First pinned 2026-08-26, and
+# extended 2026-08-29 when slice step 6 brought in the web layer. Before the
+# first successful install the versions were deliberately left open, because a
+# guessed pin looks authoritative and is not.
 #
 # Set up from scratch:
 #   python -m venv .venv
@@ -14,12 +15,16 @@
 # below. They are needed on the first install only, because pip itself has to
 # reach pypi.org before pip-system-certs can be installed to fix it.
 
+# --- environment ---
+
 # Makes Python trust the Windows certificate store. Required on this machine
 # because HTTPS is intercepted and re-signed by Netskope, which browsers accept
 # (the root CA is in the Windows store) but Python via certifi does not. Without
 # it, any HTTPS call fails with CERTIFICATE_VERIFY_FAILED.
 # See the Environment section of CLAUDE.md.
 pip_system_certs==5.3
+
+# --- scheduling ---
 
 # FSRS reference implementation. Depended on rather than reimplemented from the
 # paper: the algorithm is the core value of this project and a subtle
@@ -31,18 +36,34 @@ pip_system_certs==5.3
 #
 # 6.x matters: this version implements learning steps and relearning steps
 # itself, via Scheduler(learning_steps=...) and Card.step. The project had
-# planned to write that state machine by hand in front of FSRS, and no longer
-# does. Do not downgrade below 6 without restoring it. See wordhoard/scheduler.py.
+# planned to write that state machine by hand, and no longer does. Do not
+# downgrade below 6 without restoring it. See wordhoard/scheduler.py.
 fsrs==6.3.2
 
-# Pulled in by fsrs. Listed because pinning a transitive dependency is what
-# makes the pin reproducible.
-typing_extensions==4.16.0
-
-# Deliberately NOT listed yet: fastapi, uvicorn.
+# --- web layer, used ONLY by web/ and scripts/serve.py ---
 #
-# Nothing in wordhoard/ imports a web framework, and nothing needs to until
-# slice step 6 (the due-queue interface). The schema, the review history and the
-# scheduler are the long-lived assets; the web layer is the most replaceable
-# part of the system, so it is added last and kept at the edge. Adding it now
-# would only invite it into the core. See docs/OVERVIEW.md.
+# Nothing under wordhoard/ imports any of these, and nothing should. The schema,
+# the review history and the scheduler are the long-lived assets; the routing
+# layer is the most replaceable part of the system, so it is kept at the edge.
+# There is a grep in the step 6 verification that checks this holds.
+fastapi==0.141.1
+uvicorn==0.52.4
+Jinja2==3.1.6
+# Required by FastAPI to parse HTML form posts. Not optional: without it every
+# Form(...) parameter raises at import time, and the error does not mention
+# forms.
+python-multipart==0.0.32
+
+# --- transitive, pinned so the install is reproducible ---
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.14.2
+click==8.5.0
+h11==0.16.0
+idna==3.19
+MarkupSafe==3.0.3
+pydantic==2.13.5
+pydantic_core==2.46.5
+starlette==1.6.0
+typing-inspection==0.4.4
+typing_extensions==4.16.0

@@ -4,16 +4,23 @@ Closed items move to [TODO_archive.md](TODO_archive.md) verbatim, they are not d
 
 ## Focus
 
-**Step 6, the minimal interface. But first: use the thing.** Steps 1 to 5 are
-done and the loop closes. `.venv/Scripts/python.exe scripts/review.py` runs a
-real session against `word-hoard.db` today.
+**The vertical slice is complete. Use it before widening it.** All six steps
+are done. `.venv/Scripts/python.exe scripts/serve.py` serves the app at
+http://127.0.0.1:8000, and `scripts/review.py` does the same thing in a
+terminal. The database was reset after step 6 testing, so `review_log` is
+empty and the first real session starts clean.
 
-The project's standing rule is that nothing outside the slice begins until the
-loop has been used for real review sessions, and `review_log` is still empty.
-So the next thing is not code. It is sitting down and doing a session, because
-every remaining decision (whether 0.95 is right, whether 10 new a day is right,
-whether the feedback wording helps, whether Easy needs a control) is waiting on
-evidence that only real use produces.
+The standing rule is that nothing in **After the slice works** begins until the
+loop has been used for real review sessions. That rule is now the only thing
+gating everything else, and it is deliberate: whether 0.95 retention is right,
+whether ten new a day is right, whether the feedback wording helps, whether the
+missing Easy rating grates, and how badly 74 words runs dry are all questions
+that only real use can answer. The first session already overturned a design
+assumption, which is the argument for this rule in one sentence.
+
+The largest known gap is content volume: 74 drillable words is about a week at
+ten a day. See **Content quality** below. That work is a data task rather than
+a code task, and it is queued behind real use for the reason given there.
 
 Dependencies now live in a project venv at `.venv`, created 2026-08-26. Point
 VS Code at `.venv/Scripts/python.exe`, or the `fsrs` import will fail.
@@ -234,8 +241,26 @@ real review sessions.
 - [x] 5a. `find_learner` moved from `scripts/import_lexical_items.py` into
       `wordhoard/db.py`, because a second script needed it and the project's own
       rule is one definition. Import script re-verified after the move.
-- [ ] 6. Minimal due-queue interface. What is due, answer it, next item. No
-      stats dashboard yet.
+- [x] 6. Minimal due-queue interface. What is due, answer it, next item. No
+      stats dashboard yet. `web/app.py` plus one Jinja template, started by
+      `scripts/serve.py`. Server-rendered HTML, no JavaScript.
+      Verified against the live database: the index renders an introduction for
+      a new item and a test for a seen one, form posts record correctly
+      (`introduction` rating 3, `typing` rating 1 for a wrong gender), queue
+      counts fall as items are learned, transliterated umlauts are accepted
+      through the browser, and `/docs` comes free at status 200.
+      **Post-then-redirect-then-get verified:** refreshing the feedback URL five
+      times left `review_log` unchanged, so a stray reload cannot write a second
+      row into an append-only log.
+      **Framework isolation verified by grep:** no `fastapi`, `uvicorn`,
+      `starlette` or `jinja2` anywhere under `wordhoard/`.
+- [ ] 6a. `_describe_interval` is duplicated between `scripts/review.py` and
+      `web/app.py`. Deliberate for now, since it is presentation and the two
+      surfaces may reasonably word things differently. If they ever must agree,
+      it moves into `wordhoard/`. Left as a marker, not a defect.
+- [ ] 6b. The web interface has no way to leave a session, because it has no
+      notion of one. The terminal runner has `:q`. Decide whether the browser
+      needs anything, after real use.
 
 ## Content quality
 

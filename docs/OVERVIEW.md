@@ -62,10 +62,18 @@ retention figure.
 This is the heart of the tool.
 
 **Learning material generation** turns a due item from the scheduler into an
-actual exercise. Typing first, the other three modes later.
+actual exercise. Typing first, the other three modes later. The grading rules
+live apart from both the database and the scheduler, so that what counts as a
+correct answer can be argued about in one file and tested without a database at
+all. That matters more here than it usually would, for a reason given at the
+end of this document.
 
 **The interface** is plain and functional. Function over form, no polish, no
-animation. It will be FastAPI, and it will be thin.
+animation. It is FastAPI serving one server-rendered page with no JavaScript,
+and a terminal runner that drives exactly the same logic. Both are thin by
+construction: every rule they apply comes from a session module that neither of
+them owns, so the two cannot drift into disagreeing about what a right answer
+is.
 
 ## The decisions worth explaining
 
@@ -139,6 +147,37 @@ It is tempting to derive the answer form from the gender instead of storing it.
 That handles `der Tisch` perfectly and cannot express `mein Bruder` at all,
 where the determiner is a possessive rather than an article, and both patterns
 are in genuine use in the source material.
+
+### A scheduler schedules review, so something else has to do the teaching
+
+This one was not designed. It was found, three minutes into the first real
+session, and it is the most useful thing the project has learned about itself.
+
+The tool worked exactly as built: it took the ten highest-priority new words,
+asked for each in English, and recorded what came back. Nine of the first
+seventeen answers were failures. Not because the words were hard, but because
+the application had never once shown them. A spaced repetition scheduler
+assumes it is scheduling the *review* of something already learned, and nothing
+in the system was doing the learning. Anki gets away with the same shape only
+because its users write their own cards and have therefore already met the
+material; here a script built the cards from a mindmap the learner had not
+opened in months.
+
+So a new item is now introduced rather than tested. Its answer is displayed, the
+learner types it to fix it in place, and only from the second encounter onward
+is it a real question. Those introductions are recorded with their own exercise
+type and a fixed rating, because a word copied off the screen says nothing about
+memory and grading it would put false failures into a log that can never be
+edited.
+
+Two things are worth drawing out. The first is that no test could have caught
+this, because every test supplied the answers from the same database the grader
+was checking against; only a human meeting a prompt they had never been taught
+could see it. The second is that the schema absorbed the fix for free. The
+exercise type column was left deliberately unconstrained back at the beginning,
+on the reasoning that three of the four planned exercises did not exist yet, and
+that decision, made for an unrelated reason, is what allowed a new kind of
+recorded event to appear on an append-only table at no cost.
 
 ### The review log is append-only, and that is the point
 
@@ -218,15 +257,15 @@ the review log and current state to newline-delimited JSON, which is small,
 diffs cleanly, can be read by a human, and can be rebuilt back into SQLite. The
 export is the versioned artifact. The database file is not.
 
-## What is left before this is usable
+## Where this has got to
 
-The build order is a single vertical slice, taken end to end before anything
-widens. Create the database from the schema. Hand-enter a few dozen German
-words. Implement the FSRS scheduler and the learning-steps machine in front of
-it. Build one exercise type, typing, prompting in English and expecting the
-German back. Wire that exercise to read due items, grade the answer, append to
-the review log and update scheduler state. Then put a minimal due-queue
-interface on top: what is due, answer it, next item, nothing more.
+The build order was a single vertical slice, taken end to end before anything
+widened, and that slice is now complete. The database is built from the schema
+and holds a hand-corrected batch of German. The scheduler runs. One exercise
+type exists, typing, prompting in English and expecting the German back. It is
+wired to read due items, grade the answer, append to the review log and update
+scheduler state. A minimal interface sits on top: what is due, answer it, next
+item, nothing more.
 
 Typing was chosen as the first exercise for two reasons. It is a stronger signal
 of real recall than multiple choice, and unlike listening or speaking it needs
@@ -234,7 +273,17 @@ no audio pipeline and no speech recognition to get started.
 
 Only once that loop has been used for real review sessions does anything else
 begin: the backup export first, then more content, the other exercise types,
-grammar tagging, statistics views, the second learner, and Dutch.
+grammar tagging, statistics views, the second learner, and Dutch. That rule is
+now the only thing holding everything else back, and it is being kept
+deliberately, because the first three minutes of real use already overturned a
+design assumption that months of reasoning had not.
+
+The largest known gap is simply volume. Seventy-four drillable words is about a
+week of new material at ten a day, which is a test harness rather than a course.
+Scaling it is a data task rather than a code task, now that importing a reviewed
+file is a single re-runnable command, and it is queued behind real use for a
+specific reason: generating thousands of entries the learner cannot check, before
+a verification pass exists, would manufacture unverified claims at speed.
 
 One decision remains genuinely open: whether speech recognition gets built at
 all. Decent German and Dutch recognition is a lot of complexity to carry for a

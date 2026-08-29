@@ -10,4 +10,5 @@ One line per memory file. Read this first, then read the files it points at.
 - [Plain-text backup, not the .db file](plain-text-backup-not-db-file.md): the versioned artifact is newline-delimited JSON.
 - [Nouns drill with their determiner](nouns-drill-with-their-determiner.md): the answer is `das Haus` and `mein Bruder`, never the bare noun.
 - [The learner cannot verify the target language](learner-cannot-verify-target-language.md): the user does not speak German; surface every change and machine-check what can be machine-checked.
+- [User data is disposable for now](user-data-is-disposable-for-now.md): reset `word-hoard.db` freely until the user starts studying for real; expires the moment they do.
 - [Git remote and push](git-remote-and-push.md): pushes to IanTW/Word-Hoard on master; the Wrap Up push step applies.

@@ -1,0 +1,141 @@
+{# The whole interface, in one template.
+
+   Deliberately one file rather than a base plus partials. There is exactly one
+   screen with three states (a test, an introduction, an empty queue), and
+   splitting it would mean reading four files to understand one page.
+
+   No JavaScript. No framework. The form posts, the server redirects, the page
+   renders. Function over form is a stated project principle, and it applies to
+   the interface most of all: this is the part that would otherwise absorb
+   unlimited effort for no learning benefit. #}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>word-hoard</title>
+<style>
+  /* Deliberately plain. Enough typography to be readable for twenty minutes at
+     a stretch, and nothing that needs maintaining. */
+  :root {
+    --bg: #fbfaf7; --fg: #1c1a17; --muted: #6b665e;
+    --line: #ddd8cf; --ok: #2f6b3a; --no: #8c2f2f; --accent: #3a4a6b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17161a; --fg: #e8e4dc; --muted: #99938a;
+      --line: #35322c; --ok: #7fbf8c; --no: #d98a8a; --accent: #9fb3d9;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 3rem 1.25rem; background: var(--bg); color: var(--fg);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; justify-content: center;
+  }
+  main { width: 100%; max-width: 34rem; }
+  header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 1px solid var(--line); padding-bottom: .6rem; margin-bottom: 2rem;
+    font-size: .8rem; color: var(--muted);
+  }
+  header b { color: var(--fg); font-weight: 600; }
+  .feedback {
+    border-left: 3px solid var(--line); padding: .5rem 0 .5rem .85rem;
+    margin-bottom: 2rem; font-size: .95rem;
+  }
+  .feedback.ok { border-color: var(--ok); }
+  .feedback.no { border-color: var(--no); }
+  .feedback .next { display: block; color: var(--muted); font-size: .8rem; margin-top: .2rem; }
+  .label { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .prompt { font-size: 1.9rem; font-weight: 600; margin: .3rem 0 1.5rem; }
+  /* The answer, shown only when teaching a word for the first time. */
+  .teach {
+    font-size: 1.5rem; color: var(--accent); margin: -.8rem 0 1.5rem;
+    font-weight: 600;
+  }
+  input[type=text] {
+    width: 100%; padding: .7rem .8rem; font-size: 1.15rem; font-family: inherit;
+    background: transparent; color: var(--fg);
+    border: 1px solid var(--line); border-radius: 3px;
+  }
+  input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    margin-top: .9rem; padding: .55rem 1.4rem; font-size: 1rem; font-family: inherit;
+    background: var(--fg); color: var(--bg); border: 0; border-radius: 3px; cursor: pointer;
+  }
+  .empty { font-size: 1.2rem; }
+  .empty span { display: block; color: var(--muted); font-size: .9rem; margin-top: .5rem; }
+  footer { margin-top: 3rem; font-size: .75rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <span><b>word-hoard</b> &middot; {{ learner_name }} &middot; German</span>
+    <span>
+      {%- if counts.total -%}
+        {{ counts.due }} due, {{ counts.new }} new
+      {%- else -%}
+        queue empty
+      {%- endif -%}
+    </span>
+  </header>
+
+  {# Feedback on the previous answer, carried in the query string so that a
+     refresh cannot re-submit it. #}
+  {% if feedback %}
+    <p class="feedback {{ 'ok' if feedback_ok else 'no' }}">
+      {{ feedback }}
+      {% if next_in %}<span class="next">next in {{ next_in }}</span>{% endif %}
+    </p>
+  {% endif %}
+
+  {% if question %}
+    <form method="post" action="/answer">
+      <input type="hidden" name="content_type" value="{{ question.content_type }}">
+      <input type="hidden" name="content_id" value="{{ question.content_id }}">
+      <input type="hidden" name="is_new" value="{{ '1' if question.is_new else '0' }}">
+
+      {% if question.is_new %}
+        {# Teaching, not testing. The answer is on screen; the learner copies it.
+           This exists because the first real session recorded nine failures on
+           words the app had never once shown. #}
+        <p class="label">new word</p>
+        <p class="prompt">{{ question.prompt }}</p>
+        <p class="teach">{{ question.expected }}</p>
+        <input type="text" name="typed" autofocus autocomplete="off"
+               autocapitalize="off" autocorrect="off" spellcheck="false"
+               placeholder="type it to learn it">
+        <button type="submit">Learn</button>
+      {% else %}
+        <p class="label">type the German</p>
+        <p class="prompt">{{ question.prompt }}</p>
+        <input type="text" name="typed" autofocus autocomplete="off"
+               autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="submit">Answer</button>
+      {% endif %}
+    </form>
+  {% else %}
+    <p class="empty">
+      Nothing due.
+      {% if soonest_minutes is not none %}
+        {% if soonest_minutes < 60 %}
+          <span>Next item in {{ soonest_minutes | round | int }} min.</span>
+        {% else %}
+          <span>Next item {{ soonest.strftime('%Y-%m-%d %H:%M') }} UTC.</span>
+        {% endif %}
+      {% else %}
+        <span>Nothing else is scheduled.</span>
+      {% endif %}
+    </p>
+  {% endif %}
+
+  <footer>
+    ae, oe, ue and ss are accepted for the umlauts.
+  </footer>
+
+</main>
+</body>
+</html>
