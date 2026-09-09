@@ -2,6 +2,325 @@
 
 Dated session narrative, newest first. Entries are appended during Wrap Up.
 
+The entries for 2026-08-24, 08-26, 08-27 and 08-29 were reconstructed on
+2026-09-07 from commit messages, `docs/TODO.md` and the working tree, because
+those four sessions ended without a Wrap Up. They are marked as reconstructed
+individually. Everything in them is traceable to a commit or a file; nothing is
+recalled from a session that was not recorded at the time.
+
+## 2026-08-29: The review loop closes and the slice is finished (steps 5 and 6)
+
+**Reconstructed:** _written 2026-09-07 from commits `f067e74` and `8a65fc3`,
+`docs/TODO.md` and the working tree. Not written contemporaneously._
+
+**Focus:** _Join the scheduler, the content and the grader into one review loop,
+then put a browser interface on it and close the vertical slice._
+
+**Worked on:**
+
+- `wordhoard/session.py` holds the rules that join scheduling, content and
+  grading. `scripts/review.py` holds only terminal input and output. The split
+  exists so step 6 could reuse the rules rather than restate them.
+- The polymorphic `(content_type, content_id)` pair is resolved back to real
+  content in one dispatch table in `session.py`. Making sentences schedulable
+  later is one entry in that table.
+- `find_learner` moved from `scripts/import_lexical_items.py` into
+  `wordhoard/db.py`, because a second script needed it and one definition is
+  the rule.
+- Step 6: `web/app.py` serves two routes (show what is due, record an answer)
+  through one Jinja template. Server-rendered, no JavaScript. `scripts/serve.py`
+  starts it bound to loopback only, since the system has no authentication
+  anywhere by design.
+- `requirements.txt` re-pinned from a real `pip freeze`, with the web packages
+  grouped and marked edge-only.
+- The live database was reset after step 6 testing, so the first real session
+  starts from an empty `review_log`.
+
+**Measurements worth keeping:**
+
+- The first real terminal session recorded **9 Again out of 17 reviews**, 53%.
+  See the dead ends below for why that number measures nothing.
+- Database after the rebuild and re-import: 117 items, 74 scheduler rows, 0
+  reviews, `target_retention` 0.95 inherited from the schema default rather
+  than set by hand.
+- Post-then-redirect-then-get: five refreshes of the feedback URL left
+  `review_log` unchanged.
+- Framework isolation by grep: 0 hits for `fastapi`, `uvicorn`, `starlette` or
+  `jinja2` anywhere under `wordhoard/`.
+- `/docs` returns 200, free with FastAPI, which was the reason it was chosen.
+
+**Troubleshooting / dead ends:**
+
+- **The 53% Again rate exposed a design gap, not a grading bug, and not
+  anything about German.** Every one of those nine items was being demanded
+  back by an app that had never once shown it. A scheduler schedules the
+  *review* of something already learned, and nothing in the system was doing
+  the learning. The number is worth keeping precisely because it looked like a
+  content or grader problem and was neither.
+- **`python-multipart` is required, not optional.** Without it every
+  `Form(...)` parameter raises at import time, and the error text does not
+  mention forms, so the traceback points nowhere useful. Pinned explicitly with
+  a comment saying so.
+
+**Decisions:**
+
+- **New items are introduced before they are tested.** The answer is shown, the
+  learner copies it, and every encounter after the first is a real test.
+  Recorded as `exercise_type = 'introduction'` at a fixed rating of 3, because a
+  typo copied off the screen is not evidence about memory. Retries write
+  nothing. Quitting mid-introduction leaves the item `new`, so it is taught
+  properly next session. This is exactly what leaving `exercise_type`
+  unconstrained was for.
+- **The database was reset rather than left carrying nine false lapses.**
+  `review_log` is append-only and FSRS later fits parameters against it, so a
+  lapse that never happened would have been permanent input to the algorithm.
+  Rebuilt from `schema.sql`, re-imported from the TSV. The discarded copy went
+  to a session scratchpad, not into the repository.
+- **Answering is post-then-redirect-then-get**, so a stray browser refresh
+  cannot write a second row into an append-only log.
+- **`_describe_interval` is left duplicated** between `scripts/review.py` and
+  `web/app.py`. It is presentation, and the two surfaces are entitled to word
+  things differently. Logged as TODO 6a rather than fixed, as a marker not a
+  defect.
+- Review data is disposable until the user says otherwise. Recorded as
+  `memory/user-data-is-disposable-for-now.md`, with an explicit expiry
+  condition: it lapses the moment real studying starts.
+
+**Next:**
+
+- Use the loop for real review sessions. That is the only thing gating
+  everything under "After the slice works".
+- The web interface has no way to leave a session, because it has no notion of
+  one. The terminal runner has `:q`. TODO 6b, decide after real use.
+- Content volume is the largest known gap: 74 drillable words at 10 new a day
+  is about a week of fresh material.
+- 4a-ii stays open. The grader never produces Easy, because a typing exercise
+  cannot observe effort. If that grates, the fix is an explicit control in the
+  interface, not an inference in the grader.
+
+## 2026-08-27: Typing exercise, Hard settled by measurement, runaway intervals capped
+
+**Reconstructed:** _written 2026-09-07 from commit `1e9cafe` and `docs/TODO.md`.
+Not written contemporaneously._
+
+**Focus:** _Build the grader for the typing exercise, then settle the grading
+questions deferred from step 4._
+
+**Worked on:**
+
+- `wordhoard/exercises.py` grades a typed answer against a content item. The
+  `answer_form` fallback lives in `expected_answer()` and nowhere else, which
+  was the explicit requirement of step 4.
+- Verified by a 24 case table covering determiner errors, capitalisation,
+  transliteration, whitespace, verbs, adjectives and phrases. 24 of 24 as
+  expected.
+- `target_retention` default raised from 0.9 to 0.95 in `schema.sql` and set on
+  the live row.
+- `MAXIMUM_INTERVAL_DAYS` capped at 365 in `wordhoard/scheduler.py`.
+
+**Measurements worth keeping:**
+
+4a-i, measured on one mature item (stability 90 days, retention 0.9, fuzzing
+off):
+
+| Rating | Resulting stability | Next interval |
+|---|---|---|
+| Again (1) | 3.6 | 10 minutes |
+| Hard (2) | 172.7 | 173 days |
+| Good (3) | 227.5 | 227 days |
+
+Uncapped ladder at retention 0.9, every answer correct: 5th review 163 days
+out, 6th 498, **7th 1348**, and past twenty years by the 9th.
+
+Capped ladder at retention 0.95 with the 365 day ceiling: 1, 3, 8, 19, 43, 89,
+175, 325 days, meeting the cap on the 10th review. Costs roughly 1.5x the
+reviews.
+
+Umlaut and eszett transliteration affects 10 of the 74 drillable answers.
+
+**Troubleshooting / dead ends:**
+
+- **Hard is not a middle course, and the first recommendation was wrong.** The
+  intuition was that a right-word-wrong-gender answer sits between wrong and
+  right, so it should be Hard. The table above kills that: Hard returns the item
+  in 173 days against Good's 227. Rating a gender error Hard would tell the
+  learner about it and then effectively never drill it again. Corrected against
+  my own recommendation, by measurement rather than argument.
+- **A 227 day interval looked wrong to the user, and it was.** Questioning it is
+  what exposed the uncapped ladder. FSRS is not miscomputing anything there; it
+  answers correctly when recall probability falls to the target. But
+  retrievability on demand is not the objective for a language somebody intends
+  to speak, so the target was the wrong instruction, not the model.
+- **A comment in `scheduler.py` was wrong and was retracted in place.** It
+  claimed the uncapped default was deliberate, because clipping the model means
+  distrusting it. Capping expresses a different objective; it is not a lack of
+  confidence in FSRS.
+- Capitalisation was nearly enforced on every word rather than on nouns. Applied
+  to verbs it would fail `Gehen` for breaking no rule the learner is being
+  taught. Restricted to nouns before it shipped.
+
+**Decisions:**
+
+- **Determiner and noun are graded separately**, so a correct noun with the
+  wrong article reports "right word, wrong gender" rather than a flat wrong.
+  Chosen as the better learning signal.
+- **A wrong or missing determiner is Again (1).** The item being scheduled is
+  `das Haus`, not `Haus`, and it was not produced.
+- **Capitalisation alone, with word and gender both right, is Hard (2).** A
+  deliberate exception: noun capitalisation is one systematic rule rather than
+  42 separate facts, so a missed shift key says nothing about whether this
+  particular word is known. Destroying 96% of an item's stability over it would
+  make the tool punishing to use.
+- `ae`, `oe`, `ue` and `ss` are accepted for `ä`, `ö`, `ü` and `ß`, since the
+  learner has no German keyboard. Folded on both sides, so `Baeckerei` matches
+  and `Backerei`, the umlaut simply dropped, does not. Feedback always shows the
+  properly spelled form.
+- A determiner that disagrees with the drilled form but agrees with the stored
+  gender is Good, with a note naming the drilled form. `der Bruder` against a
+  drilled `mein Bruder` is correct German and demonstrates exactly the knowledge
+  being tested. Grading it "wrong gender" would have been a lie about the one
+  thing this exercise is for.
+- Retention 0.95 and the 365 day ceiling are **starting values, not measured
+  ones.** Revisit once `review_log` holds enough history to support a parameter
+  fit.
+
+**Next:**
+
+- Step 5: wire the exercise to the scheduler, appending to `review_log` and
+  updating `item_state`.
+- 4a-ii left open deliberately: the grader cannot produce Easy, because a
+  typing exercise cannot observe effort.
+
+## 2026-08-26: German batch imported, FSRS scheduler built, state machine deleted before it was written (steps 2e and 3)
+
+**Reconstructed:** _written 2026-09-07 from commits `369d807` and `b248501`,
+`requirements.txt` and `docs/TODO.md`. Not written contemporaneously._
+
+**Focus:** _Get the reviewed TSV into the database, then build the scheduler on
+top of it._
+
+**Worked on:**
+
+- `scripts/import_lexical_items.py` transcribes a reviewed TSV into
+  `lexical_items`, creating `item_state` rows only for rows marked
+  `drillable=yes`.
+- `wordhoard/scheduler.py` translates `item_state` rows to and from `fsrs.Card`,
+  appends to `review_log` **before** updating `item_state`, and builds the due
+  queue with the daily new limit applied.
+- Project venv created at `.venv`. `requirements.txt` pinned from a real freeze
+  for the first time, including `fsrs==6.3.2`.
+- Ran the real `scripts/init_db.py --learner "Ian" --language de` against the
+  project root, creating `word-hoard.db`.
+
+**Measurements worth keeping:**
+
+- Import against the live database: 117 items, 74 scheduler rows, 43 stored as
+  reference and unscheduled. 0 empty strings where NULL was meant, 0 gendered
+  nouns without an `answer_form`, 0 scheduler rows pointing at absent content.
+  A re-run reports 117 unchanged and creates no new scheduler rows.
+- Scheduler walk on a scratch copy: a new item takes a 10 minute step, graduates
+  to 2 days, then 14, then 49.
+- `target_retention` on one identical card: 0.80 gives a 109 day interval, 0.90
+  gives 32, 0.99 gives 2. That column is the single biggest lever on daily
+  workload in the whole system.
+- Failing a graduated item moves it to `relearning` and increments `lapses`.
+  Failing one still in learning does not.
+- `review_log` gained 6 append-only rows: NULL before-state on the first review,
+  real elapsed and scheduled days thereafter.
+- Daily new cap: 10 items offered on an unreviewed database, 0 once 10 had been
+  introduced, 10 again the following day.
+
+**Troubleshooting / dead ends:**
+
+- **`pip install py-fsrs` fails.** `py-fsrs` is the GitHub project name; the
+  PyPI distribution is plain `fsrs`. The error is "no matching distribution
+  found", which gives no hint of the real name. Recorded in `requirements.txt`
+  and in `memory/fsrs-not-sm2.md`.
+- **The planned learning-steps state machine was not written, and should never
+  be.** `fsrs` 6.x implements it, via `Scheduler(learning_steps=...)` and
+  `Card.step`. The project had it queued as our own code across the TODO, the
+  OVERVIEW and a memory file, and all three were corrected. The pin carries a
+  note not to downgrade below 6 without restoring what the library provides.
+- Nearly hardcoded 0.9 retention in the scheduler rather than reading
+  `learner_languages.target_retention`. Caught as TODO 3a and settled by the
+  measurement above instead of by assertion.
+
+**Decisions:**
+
+- **The import is re-runnable, and that forces one asymmetry.** `lexical_items`
+  is content owned by the TSV and safe to overwrite. `item_state` is scheduling
+  progress owned by the learner's review history, and is never reset or deleted.
+  Verified by seeding progress (state `review`, stability 12.5, 7 reps, 1 lapse,
+  a set `due_at`), editing the content, re-importing, and confirming the word
+  changed while the progress survived untouched.
+- **`--dry-run` takes the real write path and rolls back**, so its counts are
+  measurements rather than predictions. A dry run that skips the write path
+  over-counts, and that number is what a human uses to authorise the real run.
+- **Function words are stored but never scheduled.** 43 of 117. An English
+  prompt of "the" has three German answers. No new column was needed: simply
+  create no `item_state` row, which is what separating content from scheduling
+  in the schema bought.
+- **Learning step durations live as module constants** `LEARNING_STEPS` and
+  `RELEARNING_STEPS` in `wordhoard/scheduler.py`, passed into the library
+  scheduler rather than driving a state machine of our own. Not a settings
+  table: a two-person tool does not need a UI for a number that changes once a
+  year.
+- **FSRS is depended on rather than reimplemented from the paper.** The
+  algorithm is the core value of the project, and a subtle reimplementation bug
+  would be invisible for months.
+- The daily new cap counts items whose **first** review was today, not reviews
+  today. Those are different numbers.
+
+**Next:**
+
+- Step 4: the typing exercise, with the `answer_form` fallback in one place.
+- Settle 4a-i, still open: what rating a right-word-wrong-gender answer feeds
+  into FSRS.
+
+## 2026-08-24: First commit landed, handover retired, remote recorded
+
+**Reconstructed:** _written 2026-09-07 from commit `93d5eed` and the memory
+files it touched. Not written contemporaneously._
+
+**Focus:** _Clear the housekeeping that was deliberately queued behind the first
+commit._
+
+**Worked on:**
+
+- Deleted `handover.md`. Its content now lives in `CLAUDE.md`,
+  `docs/OVERVIEW.md`, `schema.sql`, `docs/TODO.md` and `memory/`, and the file
+  stays recoverable from `00c9eb9`.
+- Deleted `data/review/german_draft revised.tsv` once its seven pronunciation
+  edits were folded back into `scripts/draft_german.py`, so there is one draft
+  rather than two.
+- Added the GitHub remote and replaced `memory/local-only-git-no-remote.md` with
+  `memory/git-remote-and-push.md`. Updated `CLAUDE.md` to match, so the Wrap Up
+  push step no longer instructs itself to skip.
+- Recorded the content review round trip in
+  `memory/learner-cannot-verify-target-language.md`.
+
+**Troubleshooting / dead ends:**
+
+- The remote was first added with the wrong URL, `Word_Hoard` with an underscore
+  rather than `Word-Hoard` with a hyphen. Corrected with `git remote set-url`
+  rather than by removing and re-adding.
+- **Google Sheets mangled the returned TSV.** The reviewed file came back with
+  stray apostrophes where the spreadsheet had half-stripped the quotes around
+  the pronunciation hints. Treated as a round-trip artifact rather than an
+  intended edit, confirmed with the user, then folded in.
+
+**Decisions:**
+
+- **The generating script, not the TSV, is the source of truth for a content
+  batch.** Accepted edits go back into `scripts/draft_german.py` and the file is
+  regenerated, so the two cannot drift.
+- Returned review files are diffed before staging, never staged blind.
+
+**Next:**
+
+- Step 2e: the import script, which closes step 2.
+- Then step 3, the scheduler.
+
 ## 2026-08-23: Project setup, schema landed, German content batch drafted
 
 **Focus:** _Turn three loose files (a Claude template, a handover brief, an ERD)
