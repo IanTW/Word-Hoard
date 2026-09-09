@@ -18,14 +18,33 @@ The authoritative records are `schema.sql` for the database itself,
 schema drawn visually. The ERD is reference only and is not generated from
 anything; if it disagrees with `schema.sql`, the SQL wins and the ERD is stale.
 
-The project is at the start of its first vertical slice: build the SQLite
-database, hand-enter a few dozen German words, implement FSRS with learning
-steps in front of it, build one typing exercise, wire it to the scheduler, and
-put a minimal due-queue UI on top. **Nothing outside that slice exists yet.**
-Sentences, grammar concepts, audio, speech recognition, the backup export, a
-second learner and Dutch are all planned, not built. Treat every mention of
-them as design intent rather than live behaviour, and do not start on any of
-them until the slice has been used for real review sessions.
+**The one architectural rule:** nothing under `wordhoard/` imports a web
+framework. `wordhoard/` is framework-free domain logic (the scheduler, the
+grader, the session rules); `web/` and `scripts/` are the edge and own no rules
+of their own. The schema and `review_log` outlive any routing layer, so the
+future-proofing lives in the layering rather than in the framework. Verified by
+grep at step 6 and worth re-running: no `fastapi`, `uvicorn`, `starlette` or
+`jinja2` anywhere under `wordhoard/`. Defend this split when it becomes
+inconvenient.
+
+As of 2026-08-29, **the vertical slice is COMPLETE.** All six steps are done:
+the SQLite database, 117 hand-checked German entries of which 74 are drillable,
+FSRS with library-supplied learning steps, the typing exercise, the review loop
+with an introduction pass in front of it, and a server-rendered due-queue
+interface. The database was reset after step 6 testing, so `review_log` is
+empty and the first real session starts clean.
+
+**Nothing outside the slice exists, and nothing outside it starts until the loop
+has been used for real review sessions.** Sentences, grammar concepts, audio,
+speech recognition, the backup export, statistics, a second learner and Dutch
+are all planned, not built. Treat every mention of them as design intent rather
+than live behaviour. The first real session already overturned a design
+assumption, which is that rule's argument in one line: 9 Again out of 17 reviews
+measured nothing about German and nothing about the grader, only that the app
+was demanding words back before it had ever shown them.
+
+**The largest known gap is content volume.** 74 drillable words at the default
+10 new per day is about a week of fresh material.
 
 ---
 
@@ -84,10 +103,56 @@ Rules:
   rule alone will not hold a model's habit, so pair every such rule with a
   mechanical check.**
 
+**The mechanical check exists** (2026-09-07), in `.claude/settings.json`, ported
+from the atc-game project on this machine:
+
+- `.claude/hooks/no_dashes_response.ps1` is a **Stop** hook. It reads the last
+  assistant message out of the session transcript and refuses to let the turn
+  end while a dash is in it. Stop is the only event that can see assistant prose
+  at all: the tool hooks never do, and a reply with no tool call is invisible to
+  them.
+- `.claude/hooks/no_dashes_file.ps1` is a **PostToolUse** hook on Write and
+  Edit. It judges only the text being written, never the file's existing
+  contents, and is scoped by the `$PROSE_EXTENSIONS` list at the top of the
+  script. That list is `.md`, `.txt`, `.py`, `.sql` and `.html`, which is wider
+  than the source project's `.md` and `.txt`. The reason is measured rather than
+  assumed: on 2026-09-07 a sweep of every tracked file found zero dashes of
+  either kind, so there is no older prose for a newly written comment to look
+  inconsistent beside. Narrowing it again is a one-line change.
+- Both exempt fenced and inline code, so quoting a file, a log line or a TSV row
+  that already contains a dash is not an offence. Both exit silently on anything
+  they cannot parse, and the Stop hook honours `stop_hook_active` so it can never
+  hold a turn in a loop.
+- **Two defects were found and fixed during the port, and both are still present
+  in the atc-game copies.** First, reading stdin through `[Console]::In` decodes
+  with the console codepage rather than UTF-8, so an em dash arrived as three
+  bytes, decoded to three unrelated characters and never matched: the hook
+  silently passed exactly the text it exists to catch. Both scripts now read
+  standard input through an explicit UTF-8 `StreamReader`. Second, invoking a
+  script as `powershell -Command "& script.ps1"` collapses its exit 2 into exit
+  1, which the harness reads as an ordinary error rather than as a block.
+  Measured directly: a script whose only statement is `exit 2` returns 1 through
+  `-Command` and 2 through `-File`. The hooks are therefore registered in the
+  exec form, `powershell.exe` with `-File` in `args`.
+- **The format sections above are deliberately NOT hooked.** Two of the rules
+  here are judgement calls, omitting an empty section and dropping the structure
+  for a short reply, and a hook enforcing headings would push toward padding an
+  empty section rather than dropping it.
+
+The hook paths in `.claude/settings.json` are absolute. Moving the repository
+means editing that file.
+
 ---
 
 ## Working Conventions
 
+- **Test plans:** every *learner-facing* feature gets a section in
+  `docs/TESTPLAN.md`, **written and agreed before any code.** Import scripts,
+  refactors, tooling and docs are exempt. A learner-facing feature is anything
+  that changes what the learner sees, what counts as correct, what rating
+  reaches FSRS, when an item returns, or what is written to `review_log`. The
+  append-only log sets the bar: a feature that writes to it needs its plan
+  agreed before it runs against the live database, not after.
 - **Terminal:** always use the Bash tool, never PowerShell.
 - **Shell restraint:** **two failed attempts is the ceiling.** Do not hunt
   through command variants. Every retry costs the user a manual authorisation
@@ -100,6 +165,10 @@ Rules:
 - **Comments:** err on the side of too many. See the section below.
 - **Prefer dedicated file and search tools** over shell commands wherever one
   fits.
+- **Housekeeping:** `docs/HOUSEKEEPING.md` is the checklist and
+  `tools/housekeeping.sh` is the mechanical check behind it. The script runs as
+  part of Wrap Up and **reports only, always exiting 0**, because a Wrap Up that
+  could not finish over a stale document would be worse than the stale document.
 
 ### Commenting standard
 
@@ -117,7 +186,7 @@ context cannot be recovered.
 
 ## The Documentation System
 
-Five files, five distinct jobs. Do not let them blur into each other.
+Seven files, seven distinct jobs. Do not let them blur into each other.
 
 | File | Role | Tense |
 |---|---|---|
@@ -125,7 +194,15 @@ Five files, five distinct jobs. Do not let them blur into each other.
 | `docs/TODO_archive.md` | Closed items, verbatim | Historical |
 | `docs/DEVLOG.md` | Dated session narrative | Chronological |
 | `docs/OVERVIEW.md` | Essay-style project tour | Timeless |
+| `docs/TESTPLAN.md` | What a feature must prove, agreed first | Forward-looking |
+| `docs/HOUSEKEEPING.md` | The judgement half of the Wrap Up check | Standing |
 | `memory/` | Durable rules and preferences | Standing |
+
+`docs/TESTPLAN.md` is the one that is easiest to blur. It is not a record of
+what was verified, which is what a DEVLOG entry carries; it is the agreement
+about what would count as verified, made before the code exists. The
+retrospective section at the bottom of that file is explicitly labelled as a
+record rather than an example, precisely so the distinction survives.
 
 ### `docs/TODO.md`
 
@@ -244,9 +321,13 @@ individually unless asked; the phrase is the trigger.
    sees it was considered.
 3. **Update TODOs.** Tick off completed items, add tasks raised during the
    session, realign wording with the current state of the code.
-4. **Commit.** Propose the message and **wait for confirmation.** Never
+4. **Run the housekeeping check.** `bash tools/housekeeping.sh`, then work
+   through the by-hand questions in `docs/HOUSEKEEPING.md`. The script reports
+   only and never fails, so nothing here blocks the Wrap Up; report what it
+   found and what was decided about each finding.
+5. **Commit.** Propose the message and **wait for confirmation.** Never
    auto-commit, not even inside this sequence.
-5. **Push.** Once the commit lands, push to `origin` on the current branch.
+6. **Push.** Once the commit lands, push to `origin` on the current branch.
    Never force-push.
 
 Trigger only on the literal phrase, not on "wrap" or "finish" used loosely.
@@ -332,8 +413,27 @@ about what is missing.
 Windows 10 Pro, Python project, developed in VS Code via
 `word-hoard.code-workspace`.
 
+**Running it.** Dependencies live in a project venv at `.venv`, created
+2026-08-26. Always invoke through it explicitly rather than through a bare
+`python`:
+
+```bash
+.venv/Scripts/python.exe scripts/serve.py     # browser interface on http://127.0.0.1:8000
+.venv/Scripts/python.exe scripts/review.py    # the same review loop in the terminal
+.venv/Scripts/python.exe scripts/import_lexical_items.py --dry-run
+```
+
+`serve.py` binds to loopback only, deliberately, because the system has no
+authentication anywhere by design. FastAPI also serves `/docs` for free, which
+is the interface to reach for when checking a route by hand.
+
+**The trap is the interpreter.** A bare `python` on this machine is not the venv,
+and the failure is `ModuleNotFoundError: No module named 'fsrs'` in files that
+are perfectly correct. Point VS Code at `.venv/Scripts/python.exe`. Reach for
+the interpreter before debugging the code.
+
 **Remote:** `origin` is `https://github.com/IanTW/Word-Hoard.git`, branch
-`master`. Wrap Up step 5 (push) applies. Never force-push.
+`main`. Wrap Up step 6 (push) applies. Never force-push.
 
 Machine-specific trap, carried over from the originating project on this same
 machine:
