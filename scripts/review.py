@@ -23,7 +23,7 @@ from pathlib import Path
 # Allow running this file directly. Same trick as the other scripts.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from wordhoard import db, session  # noqa: E402  (must follow the sys.path fix)
+from wordhoard import backup, db, session  # noqa: E402  (must follow the sys.path fix)
 
 # Typed instead of an answer to leave the session. Not a bare empty line,
 # because an empty line is a real answer meaning "I do not know", which is a
@@ -232,6 +232,21 @@ def main() -> int:
 
     run_session(conn, learner_id, learner_name, args.language, args.limit)
     conn.close()
+
+    # Back up the session before exiting. The browser interface exports after
+    # every answer because it has no notion of a session to end; here there is
+    # one, so once is enough.
+    #
+    # Quiet, for the same reason as in the web app: a backup failure must not be
+    # the last thing a learner sees after a good session, and the answers are
+    # already committed. scripts/export_backup.py is the loud path.
+    #
+    # After conn.close() so the export opens its own connection against a
+    # database with nothing uncommitted in flight.
+    if backup.export_quietly(db_path=db_path) is None:
+        print("\nwarning: the automatic backup did not run. "
+              "Try scripts/export_backup.py to see why.", file=sys.stderr)
+
     return 0
 
 

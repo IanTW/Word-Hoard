@@ -10,193 +10,76 @@ http://127.0.0.1:8000, and `scripts/review.py` does the same thing in a
 terminal. The database was reset after step 6 testing, so `review_log` is
 empty and the first real session starts clean.
 
-The standing rule is that nothing in **After the slice works** begins until the
-loop has been used for real review sessions. That rule is now the only thing
-gating everything else, and it is deliberate: whether 0.95 retention is right,
-whether ten new a day is right, whether the feedback wording helps, whether the
-missing Easy rating grates, and how badly 74 words runs dry are all questions
-that only real use can answer. The first session already overturned a design
-assumption, which is the argument for this rule in one sentence.
+**M1 is done as of 2026-09-08: the backup exists and runs automatically.**
+`data/backup/` holds newline-delimited JSON of `review_log`, `item_state` and
+the learner rows, refreshed after every answer in the browser and at the end of
+every terminal session. The next session starts at **M2**, making the interface
+usable for daily sessions, or at **M3** if content matters more than comfort.
+
+The standing rule was that nothing after the slice begins until the loop has
+been used for real. **The user confirmed on 2026-09-08 that they will now use
+it**, so that rule is satisfied rather than lifted, and the questions it was
+holding open are now answerable by evidence instead of argument: whether 0.95
+retention is right, whether ten new a day is right, whether the feedback wording
+helps, whether the missing Easy rating grates, and how fast 74 words runs dry.
+
+That confirmation is what made M1 urgent, and M1 was therefore done first. From
+the first real session `review_log` holds irreplaceable history and the database
+file is gitignored. Content is rebuildable from the TSV; the log is rebuildable
+by nothing, which is why the export had to exist before the studying started
+rather than after.
 
 The largest known gap is content volume: 74 drillable words is about a week at
-ten a day. See **Content quality** below. That work is a data task rather than
-a code task, and it is queued behind real use for the reason given there.
+ten a day. It is now M4 in the plan below, and it is blocked on M3 rather than
+on real use. Verification comes first because generating entries the learner
+cannot check, before a check exists, writes false lapses into a log that has
+just become permanent.
 
 Dependencies now live in a project venv at `.venv`, created 2026-08-26. Point
 VS Code at `.venv/Scripts/python.exe`, or the `fsrs` import will fail.
 
-The stack decision gates step 6 only, not steps 3 to 5, because the scheduler is
-framework-free domain logic. Nothing in `wordhoard/` imports a web framework and
-nothing should until step 6.
+Three project conventions landed 2026-09-07 and change how the next session
+works rather than what it builds: the no-dashes rule now has a mechanical check
+behind it, learner-facing features need a `docs/TESTPLAN.md` section agreed
+before any code, and Wrap Up gained a housekeeping step. See **Project
+conventions** below. None of this touches the standing rule above: real use
+still gates everything.
 
-Content volume is knowingly thin: 74 drillable words at the default 10 new per
-day is about a week of fresh material. Scaling it is a data task that step 2e
-has now made cheap, and it is deliberately queued behind step 6 rather than
-done now, because generating content the learner cannot verify before the
-verify cycle exists would write false lapses into an append-only log. See
-**Content quality** below.
+The 34 closed items were archived to `docs/TODO_archive.md` on 2026-09-07,
+verbatim. Nothing was summarised; the file is the record of how each decision
+was reached, and several carry measurements that are not written down anywhere
+else.
 
 ---
 
 ## Open decisions
 
-- [x] **Backend and frontend stack. DECIDED: FastAPI, at the edge only.**
-      Nothing in `wordhoard/` imports it. Chosen for the free `/docs`
-      interface during the UI-less build phase and for Pydantic validating
-      the columns the schema deliberately left unconstrained, not for being
-      new (it is from 2018). Confirmed 2026-08-23.
-- [ ] Exact format and location of the plain-text backup export. Decided in
-      principle: newline-delimited JSON of `review_log` and `item_state`.
-      Undecided: file layout, directory, and what triggers the export.
+- [x] Exact format and location of the plain-text backup export. **SETTLED
+      2026-09-08 by building it (M1).** Newline-delimited JSON, one file per
+      table, in `data/backup/`, committed to git. Triggers: after every answer
+      in the browser, at session end in the terminal, and on demand via
+      `scripts/export_backup.py`.
 - [ ] Whether speech recognition is built at all. Deprioritised below typing,
       reading and listening. German and Dutch ASR is a lot of complexity for a
       personal tool.
 - [ ] Content sourcing beyond the first hand-entered batch: Tatoeba for
       sentence pools, selective LLM generation for typing sentences built
       around a specific word being drilled.
-- [x] Where the learning-step durations live. **DECIDED 2026-08-26: module
-      constants** `LEARNING_STEPS` and `RELEARNING_STEPS` in
-      `wordhoard/scheduler.py`, passed into the library's scheduler rather than
-      driving a state machine of our own. Not a settings table: a two-person
-      tool does not need a UI for a number that changes once a year.
-- [x] CHECK constraints. **DECIDED:** added on `item_state.state` and
-      `review_log.rating`, which are closed sets fixed by the state machine
-      and by FSRS. Deliberately NOT added on `content_type` or
-      `exercise_type`, which are meant to gain values and which SQLite could
-      only unconstrain by rebuilding the table. Verified: bad values
-      rejected, new content and exercise types still insert without
-      migration.
 - [ ] Whether `CLAUDE_TEMPLATE.md` stays in this repo now that `CLAUDE.md` is
       adopted, or is kept elsewhere as a reusable template.
 
 ## Vertical slice
 
-Do not start anything outside this list until step 6 works and has been used for
-real review sessions.
+All six steps are closed and archived. What remains here is the four items that
+were deliberately deferred rather than done, kept under this heading because
+each one was a decision made during the slice and is best read next to it. The
+gate on everything else is no longer step 6, which works; it is real use.
 
-- [x] 1a. Write `schema.sql` from the agreed design. Verified by executing it
-      against an in-memory SQLite database: all 9 tables create cleanly.
-- [x] 1b. Build script that creates the actual `.db` file from `schema.sql`,
-      including seeding `languages` and one `learners` row. `wordhoard/db.py`
-      plus `scripts/init_db.py`. Verified end to end against a scratch database:
-      9 tables created, 2 languages seeded, learner enrolled with the schema
-      defaults (10 new/day, 0.9 retention), and a second run correctly refused
-      with exit code 1 rather than touching the existing file.
-- [x] 2a. Source the first batch. Decided: the learner's own FreeMind
-      mindmaps at `C:/Users/Ian/Documents/General/German.mm` and `Dutch.mm`, in
-      preference to a frequency list, because they are already at the right
-      level and reflect what this learner actually studied. Frequency lists
-      are demoted to backfilling `frequency_rank` later.
-- [x] 2b. `scripts/parse_mindmap.py`: parse the mindmaps into reviewable TSV.
-      Verified against both files: 117 German entries, 59 Dutch.
-- [x] 2c. Draft the German batch with translations filled in, prompts
-      disambiguated, genders and spellings corrected. `scripts/draft_german.py`
-      produces `data/review/german_draft.tsv`: 117 entries, 74 drillable, 76
-      carrying a recorded change. Mechanically checked for column count,
-      duplicate lemmas, missing translations and bad flag values.
-- [x] 2d1. Add `lexical_items.answer_form` and populate it: nouns drill as
-      `das Haus`, family members as `mein Bruder`. 42 of 117 entries have an
-      answer form distinct from the lemma. Asserted in the generator that no
-      gendered noun escapes without a determiner.
-- [x] 2d. User review of `data/review/german_draft.tsv`. Reviewed 2026-08-23,
-      returned as `data/review/german_draft revised.tsv`. Seven pronunciation
-      hints rewritten in the user's own respelling scheme (`pah-k`,
-      `oo-baa-hn`, `beck-a-rye`, `becker`, `sh-or-n`, `zorn`, `v-oh`), the
-      surrounding single quotes dropped, and the `changes` column cleared as
-      a sign-off. No German content was disputed. Edits folded back into
-      `scripts/draft_german.py` and regenerated.
-- [x] 2d-ii. Delete `data/review/german_draft revised.tsv` once the folded
-      edits are confirmed, so there is one draft rather than two. Confirmed by
-      the user and deleted in commit `93d5eed`, still recoverable from
-      `00c9eb9`.
-- [x] 2e. Import script: reviewed TSV to `lexical_items`, and create
-      `item_state` rows only for rows marked `drillable=yes`. Function words
-      are stored as reference content but never enter the due queue, because
-      an English prompt of "the" has three German answers.
-      `scripts/import_lexical_items.py`, run 2026-08-25. Verified against the
-      live database: 117 items, 74 scheduler rows, 43 stored as reference and
-      unscheduled, 0 empty strings where NULL was meant, 0 gendered nouns
-      without an `answer_form`, 0 scheduler rows pointing at absent content.
-      Re-run reports 117 unchanged and creates no new scheduler rows.
-      Separately verified that a content edit updates `lexical_items` while
-      seeded scheduling progress (state `review`, stability 12.5, 7 reps,
-      1 lapse, a set `due_at`) survives the re-import untouched.
 - [ ] 2f. Import the 8 drafted sentences from
       `data/review/german_sentences_draft.tsv` into `sentences` and
       `sentence_lexical_items`. **After step 6**, not now: sentences are
       outside the vertical slice. Drafted early only because the mindmap
       gives the sentence-to-word links for free.
-- [x] 3. Implement the FSRS scheduler. `wordhoard/scheduler.py`, built on the
-      `fsrs` PyPI package (note: NOT `py-fsrs`, which is only the repo name and
-      does not install). **The learning-steps state machine was not written.**
-      `fsrs` 6.x implements it: `Scheduler(learning_steps=...)` and `Card.step`.
-      Our step durations are module constants passed in. Verified on a scratch
-      copy of the live database: a new item walks 10 minutes, graduates to 2
-      days, then 14 and 49; failing a graduated item moves it to `relearning`
-      and increments `lapses`, while failing one still in learning does not;
-      `review_log` gained 6 append-only rows carrying NULL before-state on
-      first review and real elapsed and scheduled days thereafter.
-- [x] 3a. Make sure `learner_languages.target_retention` actually reaches the
-      scheduler. Do not hardcode 0.9. Verified by measurement on one identical
-      card: retention 0.80 gave a 109 day interval, 0.90 gave 32 days, 0.99
-      gave 2 days. The column is the single biggest lever on daily workload.
-- [x] 3c. Retention and interval ceiling. **DECIDED 2026-08-27, prompted by the
-      user questioning whether a 227 day interval could possibly be right.** It
-      was not. Measured at the then-current retention of 0.9 with no ceiling, a
-      word answered correctly every time was scheduled 163 days out on its
-      fifth review, 498 on its sixth, **1348 on its seventh** and over twenty
-      years by its ninth. FSRS is not wrong there; it answers when recall
-      probability falls to the target. But retrievability on demand is not the
-      objective for a language somebody means to speak.
-      Two changes: `target_retention` default raised 0.9 to 0.95 in
-      `schema.sql` and updated on the live row for Ian, and
-      `MAXIMUM_INTERVAL_DAYS` capped at 365 in `wordhoard/scheduler.py`.
-      Verified against the live database: the ladder now runs 1, 3, 8, 19, 43,
-      89, 175, 325 days and meets the 365 cap on the tenth review.
-      Costs roughly 1.5x the reviews. Still a starting value, not a measured
-      one; revisit once `review_log` can support a parameter fit.
-      A comment in `scheduler.py` claiming the uncapped default was deliberate
-      because clipping means distrusting the model has been retracted in place:
-      capping expresses a different objective, not a lack of confidence.
-- [x] 3b. Due queue with the daily new limit. Verified: 10 new items offered on
-      an unreviewed database, 0 offered once 10 had been introduced, and 10
-      again the following day. The cap counts items whose FIRST review was
-      today, not reviews today, which are different numbers.
-- [x] 4. Build the typing exercise: prompt in English, learner types the
-      German. Expected answer is `answer_form` where set, otherwise `lemma`.
-      Implement that fallback in one place. `wordhoard/exercises.py`, with the
-      fallback in `expected_answer()` and nowhere else. Verified by a 24 case
-      table covering determiner errors, capitalisation, transliteration,
-      whitespace, verbs, adjectives and phrases: 24 of 24 as expected.
-- [x] 4c. Accept `ae`, `oe`, `ue` and `ss` for `ä`, `ö`, `ü` and `ß`, since the
-      learner has no German keyboard. Folding is applied to both sides, so
-      `Baeckerei` matches and `Backerei` (umlaut simply dropped) does not.
-      Feedback always shows the properly spelled form. Affects 10 of the 74
-      drillable answers, measured 2026-08-26.
-- [x] 4d. Accept a determiner that disagrees with the drilled form but agrees
-      with the stored gender: `der Bruder` against a drilled `mein Bruder` is
-      correct German and demonstrates exactly the knowledge being tested.
-      Rated Good with a note naming the drilled form. Grading it "wrong gender"
-      would have been a lie about the one thing this exercise is for.
-- [x] 4a. How strictly to grade the determiner. **DECIDED 2026-08-23: grade
-      the determiner and the noun separately**, so the feedback can say
-      "right word, wrong gender" rather than a flat wrong. Chosen as the
-      better learning signal.
-- [x] 4a-i. What rating a right-word-wrong-gender answer feeds into FSRS.
-      **DECIDED 2026-08-26 by measurement, and against my own first
-      recommendation.** On a mature item (stability 90 days, retention 0.9,
-      fuzzing off): Again drops stability to 3.6 and returns it in 10 minutes;
-      Hard raises it to 172.7 and returns it in 173 days; Good raises it to
-      227.5 and returns it in 227 days. Hard is therefore not a middle course,
-      it is a near-miss of Good, so rating a gender error Hard would tell the
-      learner about it and then never drill it again.
-      **A wrong or missing determiner is Again (1).** The item being scheduled
-      is `das Haus`, not `Haus`, and it was not produced.
-      **Capitalisation alone, with word and gender both right, is Hard (2).**
-      Deliberate exception: noun capitalisation is one systematic rule rather
-      than 42 separate facts, so a missed shift key says nothing about whether
-      this word is known, and destroying 96% of an item's stability over it
-      would make the tool punishing to use.
 - [ ] 4a-ii. The grader never produces Easy (4), because a typing exercise
       cannot observe effort: a correct answer typed slowly and one typed
       instantly are identical to it. The consequence is real, in that intervals
@@ -204,56 +87,6 @@ real review sessions.
       would see. If that becomes annoying the fix is an explicit "that was
       easy" control in the step 6 interface, not an inference in the grader.
       Revisit after real review sessions, not before.
-- [x] 4b. Whether capitalisation is graded. **DECIDED 2026-08-23: yes,
-      enforced.** German nouns are capitalised and the point is to learn it
-      correctly. Applies to the noun itself; see 4a for how the determiner
-      is scored alongside it.
-- [x] 5. Wire typing to the scheduler: read due items from `item_state`, grade
-      the response, append to `review_log`, update `item_state`.
-      `wordhoard/session.py` holds the rules and `scripts/review.py` holds the
-      terminal input and output, split so step 6 reuses the rules rather than
-      restating them. Verified on scratch copies: 8 answers written to
-      `review_log` and to `item_state`, a failed item correctly reappearing one
-      minute later inside the same session, `--limit` respected, `:q` and EOF
-      both ending cleanly with everything already answered kept, and umlauts
-      printing correctly with `PYTHONIOENCODING` unset.
-- [x] 5b. **Introduce new items before testing them.** Found by the first real
-      session on 2026-08-27, which produced 9 Again out of 17 reviews. That 53%
-      measured nothing about German or about the grader: every one of those
-      items was being demanded back by an app that had never shown it. A
-      scheduler schedules the REVIEW of something already learned, and nothing
-      in the system was doing the learning. A new item now shows its answer and
-      asks for it to be copied; every encounter after the first is a real test.
-      Recorded as `exercise_type = 'introduction'` at a fixed rating of 3,
-      which is exactly what leaving that column unconstrained was for.
-      Verified: one log row per introduction however many retries it took,
-      retries write nothing, quitting mid-introduction leaves the item `new`
-      so it is taught properly next time, and an introduced item comes back as
-      a test rather than a second introduction.
-- [x] 5c. **Reset the database**, since those 9 false lapses would otherwise sit
-      permanently in an append-only log that FSRS later fits parameters
-      against. Done 2026-08-29: rebuilt from `schema.sql` and re-imported from
-      the TSV, giving 117 items, 74 scheduler rows, 0 reviews, all pristine.
-      The fresh database inherited `target_retention` 0.95 from the schema
-      default, which confirms that change reaches new databases and not only
-      the row that was updated by hand. The discarded copy is in the session
-      scratchpad, not in the repository.
-- [x] 5a. `find_learner` moved from `scripts/import_lexical_items.py` into
-      `wordhoard/db.py`, because a second script needed it and the project's own
-      rule is one definition. Import script re-verified after the move.
-- [x] 6. Minimal due-queue interface. What is due, answer it, next item. No
-      stats dashboard yet. `web/app.py` plus one Jinja template, started by
-      `scripts/serve.py`. Server-rendered HTML, no JavaScript.
-      Verified against the live database: the index renders an introduction for
-      a new item and a test for a seen one, form posts record correctly
-      (`introduction` rating 3, `typing` rating 1 for a wrong gender), queue
-      counts fall as items are learned, transliterated umlauts are accepted
-      through the browser, and `/docs` comes free at status 200.
-      **Post-then-redirect-then-get verified:** refreshing the feedback URL five
-      times left `review_log` unchanged, so a stray reload cannot write a second
-      row into an append-only log.
-      **Framework isolation verified by grep:** no `fastapi`, `uvicorn`,
-      `starlette` or `jinja2` anywhere under `wordhoard/`.
 - [ ] 6a. `_describe_interval` is duplicated between `scripts/review.py` and
       `web/app.py`. Deliberate for now, since it is presentation and the two
       surfaces may reasonably word things differently. If they ever must agree,
@@ -264,50 +97,227 @@ real review sessions.
 
 ## Content quality
 
-- [ ] **Build a verify/validate cycle for generated target-language content.**
-      Agreed in principle, deliberately deferred. The user does not speak
-      German or Dutch and cannot check drafted content, so correctness rests
-      on Claude's output plus a changes column. Options to weigh: check
-      lemmas and genders against an independent dictionary source, round-trip
-      translations, or a second-model review pass. Raise this before any
-      large content generation run, not after.
+The verify/validate cycle that used to head this section is now **M3** in the
+delivery plan, with its approach decided. `frequency_rank` moved into **M4**,
+where the data is already being handled. Neither is restated here: one list, one
+definition, or the two drift and the drift looks like progress.
+
+What remains are the items the plan does not cover.
+
 - [ ] Consider drilling the plain article form of family nouns as well as the
       possessive, so `der Bruder` is learned alongside `mein Bruder`. That is
       a second row per word, currently recorded only in `notes`. Deferred:
       it doubles 8 cards for unclear benefit before the loop has been used.
-- [ ] Backfill `frequency_rank` from a real frequency list once there is a
-      reason to care about ordering.
+      **Now answerable by use rather than argument**, since the user is
+      studying: if `mein Bruder` turns out to be drilled without `der Bruder`
+      ever being learned, that shows up in practice.
 - [ ] Dutch mindmap has its own errors, including three de/het gender
       mistakes (`de brood`, `de kind`, `de meisje` should all be `het`). Not
-      touched: Dutch is out of scope until the slice works.
+      touched: Dutch is the last milestone and nothing before it needs Dutch.
+      Worth noting that these three are exactly what M3 leg 1 would catch
+      automatically, so they are a free test case for the dictionary check.
 
-## After the slice works
+## Delivery plan after the slice
 
-Ordered, but not started until step 6 has real usage behind it.
+Written 2026-09-08, replacing six one-line placeholders. Those placeholders were
+an honest backlog and a dishonest plan: three of the four learning modes named
+in `CLAUDE.md` were represented by the clause "the remaining exercise types",
+and the content strategy by the words "more content".
 
-- [ ] Plain-text export and backup job.
-- [ ] More content, then the remaining exercise types.
-- [ ] Grammar concept tagging.
+**The gate has changed.** The standing rule was that nothing here starts until
+the loop has real use behind it. The user confirmed on 2026-09-08 that they will
+now use it, so the rule is satisfied by that rather than lifted. The immediate
+consequence was M1, which is why that milestone was built the same day.
+
+Milestones are ordered by what unblocks the most, not by what is most
+interesting. Each learner-facing one needs its `docs/TESTPLAN.md` section agreed
+before any code.
+
+### M1. Protect the review log. **DONE 2026-09-08.**
+
+- [x] Plain-text export of `review_log` and `item_state` as newline-delimited
+      JSON. Built 2026-09-08 as `wordhoard/backup.py` plus
+      `scripts/export_backup.py`. Lands in `data/backup/`, which is committed:
+      `*.db` is gitignored, so this is the versioned artifact. Every row carries
+      a `content_key` natural key as well as its id, so a restore does not depend
+      on autoincrement ids landing the same way. Writes are atomic, through a
+      temporary file and `os.replace` with an `fsync`, so a crash cannot leave a
+      truncated file that still parses. Verified by 15 checks agreed in
+      `docs/TESTPLAN.md` before the code, run against scratch copies: counts,
+      determinism, JSON validity, key agreement, round trip through a rebuilt
+      database with reassigned ids, source integrity, and umlauts.
+- [x] Decide the trigger. **DECIDED 2026-09-08: both, and automatically.** The
+      browser exports after **every answer**, because it has no notion of a
+      session to end and because the cost is negligible at this size, so a crash
+      can never lose more than zero reviews. The terminal exports once at session
+      end, because it does have a session. Both use `export_quietly`, which
+      never raises: a backup failure must not cost the learner an answer.
+      `scripts/export_backup.py` is the loud path for finding out why.
+      Verified 14 of 14, three times.
+- [x] Retire `memory/user-data-is-disposable-for-now.md`, or rewrite it to say
+      the opposite. Its own expiry condition has fired. Done 2026-09-08: marked
+      EXPIRED and inverted, rather than deleted, because other memories link to
+      it and because the reversal is the fact worth keeping.
+- [ ] **The backup is still on the same disk as the database.** It survives a
+      corrupt database file, not a lost machine. Off-machine only happens when
+      `data/backup/` is committed and pushed, which is manual. Decide whether
+      that is good enough or whether a commit should be automatic too.
+
+**Why this is first and why it is now urgent.** Content is fully rebuildable
+from the TSV by re-running the import. `review_log` is rebuildable by nothing.
+Until today that gap cost nothing, because the log was empty and every row in it
+was a test. From the first real session it holds irreplaceable history, and the
+database file is gitignored, so a disk failure loses it outright. This milestone
+is small, boring, and the only one that protects something that cannot be
+recreated.
+
+### M2. Make the interface usable for daily sessions
+
+The one page was specified as minimal and was verified as correct. Minimal was
+right for proving the loop; it is not right for someone opening it every day.
+
+- [ ] A notion of a session, so there is something to finish. Currently the
+      browser has no way to stop, which is TODO 6b. The terminal has `:q`.
+- [ ] Show progress within the session: how many answered, how many left today.
+- [ ] An end-of-session summary. Counts and what comes back when. **No streaks,
+      no XP, no encouragement.** See `memory/no-gamification.md`.
+- [ ] Decide whether the "that was easy" control from 4a-ii belongs here. It is
+      the fix for the grader never producing Easy, and this is the milestone
+      where an extra control has somewhere to live.
+
+### M3. Content verification. **Blocks all content growth.**
+
+Approach decided 2026-09-08: **dictionary check plus an independent model as
+auditor.** Neither alone is enough, and they fail differently, which is the
+point.
+
+- [ ] **Leg 1, dictionary.** Check lemma spelling and noun gender against an
+      independent source. Candidates to evaluate: a Wiktionary extract such as
+      kaikki.org, which is downloadable and therefore usable offline; or the
+      DWDS API. Prefer an offline dump: it removes the Netskope variable, it is
+      reproducible, and it can be re-run for free.
+- [ ] **Leg 2, model auditor.** A second pass that reviews each drafted entry
+      and returns a structured verdict rather than prose. Runs as a separate
+      call from whatever generated the entry.
+- [ ] **The suppression rule.** An entry needs both legs to agree before it is
+      imported. Any disagreement suppresses the entry and records why, rather
+      than deleting it or importing it with a warning. Suppression is reversible
+      by re-running; a bad row written into an append-only history is not.
+- [ ] **Size the error rate honestly.** Before trusting the pipeline, draw a
+      **uniform random sample** from the entries it passed and check them by
+      hand or against a third source. A sample of the entries it flagged
+      measures nothing about the ones it let through. Report the interval, not
+      just the point estimate: zero errors in 60 draws is "under about 5%", not
+      "0%".
+- [ ] **Sample both sides.** Also check a sample of what the pipeline
+      suppressed. A wrongly rejected word never appears among the accepted ones,
+      so a precision sample cannot see it at any size.
+
+**What this cannot fix.** Both legs check whether an entry is correct German.
+Neither can tell whether it is a word worth learning, and neither closes the gap
+in [[learner-cannot-verify-target-language]] so much as narrows it. Be explicit
+about that when reporting a rate.
+
+**A caution on the word independent.** A dictionary is genuinely independent: a
+different kind of artefact, built by different people, failing in different
+ways. A second model call is only partly independent, because it shares training
+data and therefore shares blind spots with whatever drafted the entry. Use a
+different model from the drafter, and treat agreement between two models as
+weaker evidence than agreement with the dictionary.
+
+### M4. Scale the content
+
+- [x] Decide a target size. **DECIDED 2026-09-08, user agreed the proposal:
+      600 drillable entries first**, roughly Goethe A1 coverage, **then 1300 for
+      A2.** Current count is 74, so A1 alone is an eight-fold increase and A2 a
+      seventeen-fold one. Both numbers are targets rather than measurements: no
+      claim is made that 600 words is A1, only that A1 wordlists are around that
+      size.
+- [ ] Decide the source. Candidates already noted: a frequency list, the Goethe
+      A1 and A2 wordlists, or generation audited through M3. Frequency lists put
+      function words at the top, which are the worst possible typing cards, so
+      they need filtering rather than taking from the top.
+- [ ] Run it through M3 before importing anything. This milestone does not start
+      until M3 has a measured pass rate.
+- [ ] Backfill `frequency_rank` while the data is being handled anyway.
+
+### M5. Sentences
+
+- [ ] Import the 8 already-drafted sentences, which is TODO 2f, still open.
+- [ ] Build a sentence pool. Tatoeba is the candidate already recorded.
+- [ ] Make sentences schedulable. The dispatch table in `wordhoard/session.py`
+      was built for exactly this: it should be one entry.
+
+**Sentences are a dependency, not a feature.** Reading and listening both need
+material longer than a single word, so M5 blocks M6 and M7.
+
+### M6. Reading exercise
+
+- [ ] Decide the form. The strongest machine-gradable candidate is **cloze**:
+      show a German sentence with one word removed, learner types the missing
+      word. It tests comprehension in context and it grades exactly like typing,
+      so it reuses the grader.
+- [ ] Alternative to weigh: German sentence shown, learner types the English.
+      Rejected on first look because it cannot be graded mechanically, which
+      would put a model in the review loop.
+
+### M7. Audio and listening
+
+- [ ] Decide the audio source. **Offline text-to-speech is the strong
+      candidate**, since it fits a self-hosted personal tool, costs nothing per
+      item, regenerates freely when content changes, and avoids the SSL proxy
+      entirely. Recorded human audio is better quality and does not scale to
+      1300 words.
+- [ ] Decide where audio files live and whether they are generated ahead of time
+      or on demand. They should not go in git.
+- [ ] Listening exercise: hear it, type what you heard. Grades with the existing
+      grader.
+- [ ] **This is the milestone that forces JavaScript**, or at least an audio
+      element and a play control. The no-JavaScript property of the current page
+      was a step 6 simplification, not a principle, but it should be given up
+      deliberately rather than by accident.
+
+### M8. Speaking
+
+- [ ] **Still a genuinely open decision: whether this is built at all.** Carried
+      over unchanged from **Open decisions**.
+- [ ] If it is built, the shape to evaluate is local speech recognition rather
+      than a hosted service, for the same reasons as M7: no per-item cost, no
+      proxy, and nothing leaving the machine.
+- [ ] Decide what "correct" means for a spoken answer before writing anything.
+      This is where a test plan agreed in advance matters most, because a
+      pronunciation grader can be made to look good by being lenient.
+
+### Later, and deliberately unscheduled
+
+These are real but none of them blocks anything above.
+
 - [ ] Statistics views, including accuracy by exercise type from `review_log`.
-- [ ] Second learner.
+      Worth doing once the log holds enough to be worth looking at. Keep the
+      no-gamification rule in view: a statistics page is where streaks get
+      reinvented by accident.
+- [ ] Grammar concept tagging. The `grammar_concepts` table exists and is empty.
+- [ ] Second learner. The schema already supports it; nothing else does.
 - [ ] Dutch. Only at this point does the per-language processing abstraction get
       designed, against two real languages rather than one.
 
+## Project conventions
+
+Adopted 2026-09-07 by porting from the atc-game project on this machine. See
+`docs/DEVLOG.md` for that session.
+
+- [x] **Offer to fix the two hook defects in atc-game.** The originals at
+      `F:\Programming\Godot\Projects\atc-game\.claude\hooks\` carry both bugs
+      found above, which means that project's dash check may never have blocked
+      anything. Offered 2026-09-07. **DECLINED by the user the same day: leave
+      it.** Recorded rather than dropped, so the next person to touch that
+      project's hooks knows the bugs are known and the decision was deliberate.
+      Both are described in `CLAUDE.md` under the mechanical check.
+- [ ] Decide whether `.claude/settings.local.json` is ever needed here. Not
+      created, because nothing so far is personal rather than project-wide.
+
 ## Housekeeping
 
-- [x] Delete `handover.md` once the first commit has landed, so it stays
-      recoverable from git history. Its content now lives in `CLAUDE.md`,
-      `docs/OVERVIEW.md`, `schema.sql`, this file and `memory/`. Deleted in
-      commit `93d5eed`, recoverable from `00c9eb9`.
-- [x] Add `pip-system-certs` to `requirements.txt` when that file is first
-      created. See the Environment section of `CLAUDE.md` for why.
-- [ ] Pin `requirements.txt` versions from `pip freeze` after the first
-      successful install on this machine. Left open deliberately: a guessed pin
-      looks authoritative and is not.
-- [x] Run the real `python scripts/init_db.py --learner "NAME" --language de`
-      against the project root. Run 2026-08-25 as `--learner "Ian"`: created
-      `word-hoard.db` with 9 tables, 2 languages seeded, learner Ian at id 1.
-      The file is gitignored; the versioned artifact is the plain-text export.
 - [ ] Decide what happens to `word-hoard.db` if it is ever lost before the
       plain-text export exists. Right now the content is fully rebuildable
       from `data/review/german_draft.tsv` by re-running the import, but

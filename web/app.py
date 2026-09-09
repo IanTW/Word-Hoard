@@ -30,7 +30,7 @@ from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from wordhoard import db, session
+from wordhoard import backup, db, session
 
 # Which learner and language this server is serving. A module constant rather
 # than a login, because there is no authentication anywhere in this system by
@@ -142,6 +142,29 @@ def answer(
         grade, outcome = session.introduce(conn, learner_id, question, typed, now=now)
     else:
         grade, outcome = session.answer(conn, learner_id, question, typed, now=now)
+
+    # Back up immediately, before the redirect. The row just written to
+    # review_log is append-only history that nothing can reconstruct, and the
+    # database file is gitignored, so until this runs the only copy of that
+    # answer is on one disk in one file.
+    #
+    # Exporting on every single answer rather than on some interval or at a
+    # session end, for two reasons. There is no notion of a session in this
+    # interface yet, which is TODO 6b and M2. And the cost is genuinely
+    # negligible: the whole export is a few hundred kilobytes at the current 74
+    # items and stays small at the 1300 target, so per-answer is affordable and
+    # means a crash can never lose more than zero reviews.
+    #
+    # export_quietly, never export. A backup failure must not turn a successful
+    # review into a 500 and cost the learner the answer they just gave. The
+    # answer is already committed by this point; the worst case here is a stale
+    # backup, and the loud path (scripts/export_backup.py) is how that gets
+    # noticed.
+    # Defaults, because get_conn() above calls db.connect() with defaults too:
+    # this app always serves the project database. If that ever becomes
+    # configurable, both call sites change together or the backup silently
+    # starts protecting the wrong file.
+    backup.export_quietly()
 
     # 303 rather than 302, so the browser reliably turns the POST into a GET.
     params = urlencode({
