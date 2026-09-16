@@ -103,44 +103,22 @@ Rules:
   rule alone will not hold a model's habit, so pair every such rule with a
   mechanical check.**
 
-**The mechanical check exists** (2026-09-07), in `.claude/settings.json`, ported
-from the atc-game project on this machine:
+**The mechanical check exists**, as the shared hooks in `~/.claude/hooks/`,
+deployed from claude-admin (this project moved onto them 2026-09-16; its own
+copies, ported from atc-game 2026-09-07, were retired):
 
-- `.claude/hooks/no_dashes_response.ps1` is a **Stop** hook. It reads the last
-  assistant message out of the session transcript and refuses to let the turn
-  end while a dash is in it. Stop is the only event that can see assistant prose
-  at all: the tool hooks never do, and a reply with no tool call is invisible to
-  them.
-- `.claude/hooks/no_dashes_file.ps1` is a **PostToolUse** hook on Write and
-  Edit. It judges only the text being written, never the file's existing
-  contents, and is scoped by the `$PROSE_EXTENSIONS` list at the top of the
-  script. That list is `.md`, `.txt`, `.py`, `.sql` and `.html`, which is wider
-  than the source project's `.md` and `.txt`. The reason is measured rather than
-  assumed: on 2026-09-07 a sweep of every tracked file found zero dashes of
-  either kind, so there is no older prose for a newly written comment to look
-  inconsistent beside. Narrowing it again is a one-line change.
-- Both exempt fenced and inline code, so quoting a file, a log line or a TSV row
-  that already contains a dash is not an offence. Both exit silently on anything
-  they cannot parse, and the Stop hook honours `stop_hook_active` so it can never
-  hold a turn in a loop.
-- **Two defects were found and fixed during the port, and both are still present
-  in the atc-game copies.** First, reading stdin through `[Console]::In` decodes
-  with the console codepage rather than UTF-8, so an em dash arrived as three
-  bytes, decoded to three unrelated characters and never matched: the hook
-  silently passed exactly the text it exists to catch. Both scripts now read
-  standard input through an explicit UTF-8 `StreamReader`. Second, invoking a
-  script as `powershell -Command "& script.ps1"` collapses its exit 2 into exit
-  1, which the harness reads as an ordinary error rather than as a block.
-  Measured directly: a script whose only statement is `exit 2` returns 1 through
-  `-Command` and 2 through `-File`. The hooks are therefore registered in the
-  exec form, `powershell.exe` with `-File` in `args`.
+- `no_dashes_response.ps1` is a **Stop** hook. It refuses to let a turn end
+  while the reply contains a dash, and also asks for a line reference on every
+  mention of a long document.
+- `no_dashes_file.ps1` is a **PostToolUse** hook on Write and Edit. It judges
+  only the text being written, in a list of prose and code extensions that
+  covers this project's `.md`, `.txt`, `.py`, `.sql` and `.html`.
+- Both exempt code in backticks. This project's exceptions to them, if any are
+  ever agreed, go in `.claude/kit.json` with a reason and a date.
 - **The format sections above are deliberately NOT hooked.** Two of the rules
   here are judgement calls, omitting an empty section and dropping the structure
   for a short reply, and a hook enforcing headings would push toward padding an
   empty section rather than dropping it.
-
-The hook paths in `.claude/settings.json` are absolute. Moving the repository
-means editing that file.
 
 ---
 

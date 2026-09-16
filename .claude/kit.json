@@ -1,0 +1,8 @@
+{
+  "about": "This project's exceptions to the shared hooks in ~/.claude/hooks (deployed from claude-admin). Every entry needs a reason and a date, or the hooks ignore it. exclude maps a shared hook name (session_context, no_dashes_response, no_dashes_file) to {reason, date}. recap.always_load lists {file, reason, date}: memory files printed in full at every session start. stop_addons lists {script, reason, date}: project scripts the shared Stop hook also runs. Agree every exception with the user first.",
+  "exclude": {},
+  "recap": {
+    "always_load": []
+  },
+  "stop_addons": []
+}

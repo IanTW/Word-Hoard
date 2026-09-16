@@ -170,22 +170,33 @@ echo
 # ---------------------------------------------------------------------------
 # 6. The dash hooks are still wired up.
 #
-# The hook paths in .claude/settings.json are absolute, so moving or renaming the
-# repository silently disables them. Nothing announces that; the checks just stop
-# happening. Confirm the three files still exist.
+# Since 2026-09-16 the dash checks are the shared hooks in ~/.claude/hooks/,
+# deployed from claude-admin, and this project keeps no copy of them. What can
+# still silently switch them off here: the shared scripts going missing, this
+# project registering its own copy again (the shared hook then steps aside), or
+# kit.json excluding one. The last is allowed but must never go unnoticed.
 # ---------------------------------------------------------------------------
 echo "dash hook wiring"
-for f in .claude/settings.json \
-         .claude/hooks/no_dashes_response.ps1 \
-         .claude/hooks/no_dashes_file.ps1; do
-    if [ -f "$f" ]; then
-        ok "$f present"
+for f in no_dashes_response.ps1 no_dashes_file.ps1; do
+    if [ -f "$HOME/.claude/hooks/$f" ]; then
+        ok "shared $f present"
     else
-        note "$f is missing, the mechanical check is not running"
+        note "shared ~/.claude/hooks/$f is missing, the mechanical check is not running"
     fi
 done
-if [ -f .claude/settings.json ] && ! grep -q "$(basename "$ROOT")" .claude/settings.json 2>/dev/null; then
-    note ".claude/settings.json does not mention this directory name, check the absolute hook paths"
+if [ -f .claude/kit.json ]; then
+    ok ".claude/kit.json present"
+else
+    note ".claude/kit.json is missing, recreate it from claude-admin's kit template"
+fi
+# A local registration of a dash hook makes the shared one step aside.
+# cat first: grep exits 2 when either file is absent, even after a match.
+if cat .claude/settings.json .claude/settings.local.json 2>/dev/null | grep -q "no_dashes"; then
+    note "a local settings file registers a dash hook, so the shared one steps aside here"
+fi
+# An exclusion in kit.json is legitimate but should be visible at every Wrap Up.
+if grep -q '"no_dashes' .claude/kit.json 2>/dev/null; then
+    note ".claude/kit.json names a dash hook, check whether it excludes one"
 fi
 echo
 
