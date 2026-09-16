@@ -146,6 +146,116 @@ interface has no notion of one. Open as TODO 6b.
 
 # Planned
 
+## M2a: finish a session, and go again
+
+**Status:** verified. Agreed 2026-09-10 before any code, built and verified the
+same day, 22 of 22 checks against a scratch copy.
+**Raised:** 2026-09-10, by the first real use of the app. The request was "could
+do with a restart button if I want to go again and a quit button". This is the
+gate working: the rule that nothing widens until the loop has real use behind it
+existed to produce exactly this kind of feedback rather than a guess.
+
+Closes TODO 6b, which has been open since step 6 and said the browser has no way
+to leave a session because it has no notion of one.
+
+**What it must do:**
+
+- Give the browser a **notion of a session**: a start, an end, and a summary.
+  The terminal already has one through `:q`; the browser has never had one.
+- **Finish** ends the session and shows what happened: answered, learned, the
+  rating tally, and when the next item is due. The server keeps running.
+- **Go again** starts a fresh session. When items are due it simply continues.
+  **When nothing is due it grants one more daily allowance of new words**, so
+  the learner can keep going rather than stare at a countdown.
+- Every number in the summary is **derived from `review_log`**, not from a
+  counter kept alongside it. A summary that can disagree with the history is
+  worse than no summary.
+- Nothing in the summary is a streak, a score, an accuracy percentage over time,
+  a record or a word of encouragement. See `memory/no-gamification.md`. This is
+  the screen where gamification gets reinvented by accident.
+
+**Decisions taken, with reasons:**
+
+- **An extra allowance is one daily limit (10 by default), not an unlimited
+  cap.** Lifting the cap entirely would let 60 unseen words be introduced in one
+  sitting, and FSRS would return every one of them over the following days. The
+  learner would be punished tomorrow for enthusiasm today, by a mechanism they
+  cannot see while pressing the button. A bounded grant is explainable, repeats
+  if they want more, and matches a setting that already exists.
+- **The allowance is granted only when nothing is due.** That is exactly what
+  was asked for. Granting it unconditionally would quietly inflate the daily new
+  count on ordinary sessions.
+- **Session state lives in the web layer, not in `wordhoard/`.** It is presentation
+  state for one browser on one machine. Nothing in the domain layer should learn
+  what a browser session is.
+- **The summary derives from `review_log` by timestamp**, so losing the session
+  state to a server restart costs only the "since" marker, never a number.
+- **There is no Close button.** Server-rendered HTML cannot close a browser tab,
+  and `window.close()` only works on windows a script opened. The summary page
+  is the stopping point; closing the tab is the natural action and needs no
+  control. Flagged because the agreed mockup showed one.
+
+**What would make it wrong:**
+
+- A summary whose counts disagree with `review_log`.
+- Finish writing anything. It is a read, and it must stay a read.
+- Go again granting an allowance when items were due anyway, inflating the
+  daily new count.
+- An allowance that persists past the session, so the cap is permanently gone.
+- Refreshing the summary, or pressing back into it, changing anything.
+- The extra allowance leaking into the terminal runner, which did not ask for it.
+
+**Checks, and what each one would catch:**
+
+| Check | Catches | Result |
+|---|---|---|
+| Answer a known number of items, finish, compare the summary against a direct `review_log` query | a summary that invents its numbers | PASS, answered and introduced both matched, tally sums to answered |
+| `PRAGMA quick_check` and row counts before and after pressing Finish | Finish writing something | PASS, 16 rows before and after, quick_check ok |
+| Refresh the summary five times, then press back into it | a stray reload changing state | PASS, five renders wrote nothing |
+| Go again with items due, then check `introduced_today` | an allowance granted when it was not needed | PASS, no allowance granted |
+| Go again with nothing due, count new items offered | the grant not working, or being unbounded | PASS, exactly 10 offered |
+| Press Go again three times, confirm at most one allowance is available at once | an allowance that compounds silently | **PASS after a fix. This check found a real bug.** See below |
+| Start a new session the next day, check the cap is back to 10 | a permanently lifted cap | PASS, 10 new offered tomorrow with no leftover |
+| Confirm `scripts/review.py` never passes `extra_new_allowance` | the extra leaking into the terminal | PASS, only `web/app.py` passes it |
+| Grep the RENDERED summary for streak, score, percentage, praise | gamification arriving through the back door | PASS, after the check itself was rewritten. See below |
+| Finish with zero answers | a summary that only works on the happy path | PASS, renders "Nothing answered this session" |
+
+**The bug this plan caught, which is the reason the plan exists.** The first
+version of `/again` asked "is anything due?" using the allowance the session
+already held. That conflated two different questions: whether there is work
+under the ordinary daily rules, and whether a previous grant is still unspent.
+The consequence was that pressing Go again twice **revoked the allowance it had
+just given**: a new word appeared, and pressing the button again made it vanish.
+The check now asks the question with no allowance at all.
+
+The same fix exposed a second, quieter problem. Setting the extra to a flat 10
+works once and then silently does nothing, because `introduced_today` has grown
+past the raised cap and `remaining` falls back to zero. The extra is now set to
+`introduced_today`, which makes the scheduler's arithmetic come out at exactly
+one daily allowance however many words have already been learned today.
+
+**A check that was wrong rather than a feature that was.** The gamification grep
+read the template source and flagged "recorded" for containing "record", and a
+`strftime` format string for containing "%". Both were false positives from a
+lazy substring test against text the learner never sees. It now greps the
+rendered page and looks for a percentage as a digit followed by a percent sign.
+
+**Verified in production the same day, unplanned:** the user's first real
+session recorded 10 introductions, and `data/backup/review_log.ndjson` came out
+holding exactly 10 rows. M1's per-answer export works on real use, not only on
+scratch copies.
+
+**What this plan cannot check:**
+
+- Whether the extra-allowance button is a good idea for learning. It trades a
+  better session today against a heavier queue tomorrow, and only weeks of use
+  can say whether that trade is worth it. Watch for review days that feel
+  punishing after a session where the button was pressed.
+- Whether one daily allowance per press is the right grant size. It is a
+  defensible unit, not a measured one.
+
+---
+
 ## M1: plain-text backup export
 
 **Status:** verified

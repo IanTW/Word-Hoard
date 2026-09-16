@@ -332,6 +332,7 @@ def due_queue(
     learner_id: int,
     language_code: str,
     now: datetime | None = None,
+    extra_new_allowance: int = 0,
 ) -> list[sqlite3.Row]:
     """Build the review queue: everything overdue, then new items up to the cap.
 
@@ -375,9 +376,22 @@ def due_queue(
 
     # Remaining allowance for today. max(0, ...) because the limit can be
     # lowered between sessions, which would otherwise produce a negative LIMIT.
+    #
+    # extra_new_allowance is added rather than replacing the limit, and it is
+    # the caller's business how it was earned. Today the only caller that passes
+    # a non-zero value is the browser's "go again" control, which grants one
+    # further daily allowance when the queue is otherwise empty, so a learner
+    # who wants to keep going can. It is deliberately NOT unlimited: 60 unseen
+    # words introduced in one sitting would all come back over the following
+    # days, and the learner would be punished tomorrow for enthusiasm today by a
+    # mechanism invisible to them at the moment they chose it.
+    #
+    # It is a per-call argument rather than stored state, so it cannot outlive
+    # the session that granted it or leak into the terminal runner.
     remaining = max(
         0,
         limit_row["daily_new_limit"]
+        + extra_new_allowance
         - introduced_today(conn, learner_id, language_code, now),
     )
 

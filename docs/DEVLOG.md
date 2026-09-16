@@ -8,6 +8,156 @@ those four sessions ended without a Wrap Up. They are marked as reconstructed
 individually. Everything in them is traceable to a commit or a file; nothing is
 recalled from a session that was not recorded at the time.
 
+The entries for 2026-09-08 and 2026-09-10 were reconstructed the same way on
+2026-09-16, from commits `3f10919` and `8fac450`, the uncommitted working tree,
+`docs/TESTPLAN.md` and `docs/TODO.md`, after the housekeeping check flagged the
+DEVLOG as older than the newest commit.
+
+## 2026-09-10: Finish and Go again, and the dictionary source chosen by probe (M2a, M3 leg 1)
+
+**Reconstructed:** _written 2026-09-16 from the uncommitted working tree,
+`docs/TESTPLAN.md` (section M2a) and `docs/TODO.md` (M2 and M3). Not written
+contemporaneously._
+
+**Focus:** _Answer the first request from real use, a way to stop and a way to
+go again, then choose the dictionary source for content verification._
+
+**Worked on:**
+
+- The first real session asked for it: "could do with a restart button if I want
+  to go again and a quit button". Closes TODO 6b, open since step 6.
+- `GET /finish` renders `web/templates/finished.html`: answered, learned, the
+  good/nearly/again tally, and when the next item is due. A read; it writes
+  nothing.
+- `POST /again` starts a new session. When nothing is due it grants exactly one
+  further daily allowance of new words.
+- `session.summarise` in `wordhoard/session.py` reads every number out of
+  `review_log` by timestamp. Introductions are counted apart from answers.
+- `scheduler.due_queue` and `session.next_question` gained an
+  `extra_new_allowance` argument, default 0. Only `web/app.py` passes it.
+- Session state is a module dict in `web/app.py`. Nothing in `wordhoard/`
+  learns what a browser session is.
+- M3 leg 1: German Wiktionary's live API chosen over the kaikki.org dump.
+
+**Measurements worth keeping:**
+
+- M2a: **22 of 22** plan checks passed against a scratch copy.
+- The user's first real session recorded 10 introductions and
+  `data/backup/review_log.ndjson` held exactly 10 rows. The per-answer export
+  works on real use. The backup now holds 22 `review_log` rows, exported
+  2026-09-10 13:33 UTC.
+- kaikki.org German dump: **1027 MB**. Live API: all 45 nouns in **2 calls**,
+  about 30 calls for the 1300 word target.
+- Probe over all 45 gendered nouns, id order: 45 found, 42 parsed, **42 of 42
+  agree**. The 3 unparsed are the articles `der`, `die`, `das`.
+- Corrupted 20 genders on purpose: caught **20 of 20**.
+- Dutch ground truth recorded 2026-08-23 (`brood`, `kind`, `meisje`): found **3
+  of 3**.
+
+**Troubleshooting / dead ends:**
+
+- **Go again revoked its own grant.** The first `/again` asked "is anything
+  due?" with the current allowance included. Pressing it twice made a new word
+  appear and then vanish. Fixed by asking with no allowance. Caught by the
+  plan's "not cumulative" check, which is the argument for writing the plan
+  first.
+- **A flat grant of 10 worked once, then did nothing.** `introduced_today` had
+  grown past the raised cap, so `remaining` fell to zero. The extra is now set
+  to `introduced_today`, which always leaves exactly one daily allowance.
+- **The no-gamification grep was wrong, not the page.** It read the template
+  source and flagged "recorded" (contains "record") and a `strftime` "%". It now
+  greps the rendered page and looks for a digit followed by a percent sign.
+- **No Close button**, though the agreed mockup had one. `window.close()` only
+  closes windows a script opened. The summary page is the stopping point.
+- **The probe script was never saved to the repository.** It lived in a session
+  scratchpad, and on 2026-09-16 every scratchpad folder for this project was
+  empty. The TODO line that said "reuse the probe" is corrected.
+
+**Decisions:**
+
+- Grant one daily allowance, not an unlimited cap: 60 unseen words in one
+  sitting would all come back over the following days.
+- Grant only when nothing is due, so ordinary sessions do not inflate the daily
+  new count.
+- Summary from `review_log`, not a counter, so it cannot disagree with history
+  and a server restart loses only the session boundary.
+- Live API over the bulk dump: one field per word does not justify a 1 GB file.
+- The 42 of 42 figure is a census of hand-corrected content, not an estimate for
+  generated content, and says nothing about translations.
+
+**Next:**
+
+- Commit this work. It had sat uncommitted for six days, including the backup of
+  real review history.
+- Watch for a punishing review day after using Go again.
+- M3: rebuild the Wiktionary check under `wordhoard/`, with a cache.
+
+## 2026-09-08: Conventions ported from atc-game, backup export built, work after the slice planned (M1)
+
+**Reconstructed:** _written 2026-09-16 from commits `3f10919` and `8fac450`
+(both committed 2026-09-09), `docs/TESTPLAN.md` and `docs/TODO.md`. The work
+spans 2026-09-07 to 2026-09-09. Not written contemporaneously._
+
+**Focus:** _Bring over the no-dashes hooks, test plans and housekeeping from
+atc-game, then protect `review_log` before real studying starts._
+
+**Worked on:**
+
+- `.claude/hooks/no_dashes_response.ps1` (Stop) and `no_dashes_file.ps1`
+  (PostToolUse on Write and Edit), registered in `.claude/settings.json`.
+- `docs/TESTPLAN.md` with the rule that learner-facing features get a section
+  agreed before code. `docs/HOUSEKEEPING.md` and `tools/housekeeping.sh`.
+- 34 closed TODO items archived verbatim, verified byte-identical.
+- CLAUDE.md overview corrected: it still said the slice was just starting.
+- The user confirmed they will now study with the app. That expired
+  `memory/user-data-is-disposable-for-now.md`, which was inverted, not deleted.
+- `wordhoard/backup.py` and `scripts/export_backup.py` write `review_log`,
+  `item_state` and the learner rows as newline-delimited JSON into the committed
+  `data/backup/`. Every row carries a `content_key` natural key beside its id.
+- The browser exports after every answer; the terminal at session end. Both
+  through `export_quietly`, which never raises.
+- `docs/TODO.md` rewritten from six placeholder lines into milestones M1 to M8.
+  M3 approach (dictionary plus model auditor) and M4 target (600, then 1300)
+  agreed.
+
+**Measurements worth keeping:**
+
+- A script whose only statement is `exit 2` returns 1 through
+  `powershell -Command` and 2 through `-File`.
+- M1: 15 checks agreed before code, all passed on scratch copies. Automatic
+  triggers passed 14 of 14 on three consecutive runs.
+- Dash sweep of every tracked file: zero dashes, which is why the file hook
+  covers `.py`, `.sql` and `.html` as well as `.md` and `.txt`.
+
+**Troubleshooting / dead ends:**
+
+- **The dash hook passed exactly what it exists to catch.** `[Console]::In`
+  decoded stdin with the console codepage, so an em dash became three unrelated
+  characters. Fixed with an explicit UTF-8 `StreamReader`.
+- **The block never landed.** `-Command "& script.ps1"` turns exit 2 into exit
+  1. Registered in exec form with `-File`. Both defects remain in atc-game.
+- **The housekeeping check's first run found a bug in itself.** Plain
+  `git ls-files` skipped three new untracked files and reported clean.
+- **`review.py --db scratch.db` would have overwritten the real backup** with a
+  throwaway database. The output directory now derives from the database path.
+- **One trigger check failed once and never again** in three reruns. Cause not
+  established; recorded in the test plan rather than swept up.
+
+**Decisions:**
+
+- Backup is the versioned artifact because `*.db` is gitignored and a binary
+  file diffs to nothing.
+- Natural keys because autoincrement ids match a rebuilt database by
+  coincidence, not by guarantee.
+- Atomic write through a temp file, `fsync` and `os.replace`, so a crash cannot
+  leave a shorter file that still parses line by line.
+- A backup failure must never cost the learner an answer.
+
+**Next:**
+
+- Start real use. Then M2 (daily comfort) or M3 (content verification).
+- Open: the backup sits on the same disk until someone commits and pushes.
+
 ## 2026-08-29: The review loop closes and the slice is finished (steps 5 and 6)
 
 **Reconstructed:** _written 2026-09-07 from commits `f067e74` and `8a65fc3`,

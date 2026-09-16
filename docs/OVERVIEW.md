@@ -271,19 +271,34 @@ Typing was chosen as the first exercise for two reasons. It is a stronger signal
 of real recall than multiple choice, and unlike listening or speaking it needs
 no audio pipeline and no speech recognition to get started.
 
-Only once that loop has been used for real review sessions does anything else
-begin: the backup export first, then more content, the other exercise types,
-grammar tagging, statistics views, the second learner, and Dutch. That rule is
-now the only thing holding everything else back, and it is being kept
-deliberately, because the first three minutes of real use already overturned a
-design assumption that months of reasoning had not.
+Nothing else was allowed to begin until that loop had been used for real, and
+the rule earned its keep. The first three minutes of use overturned a design
+assumption that months of reasoning had not, and the first daily session asked
+for something no one had planned: a way to stop, and a way to go again when the
+queue runs dry. The browser now has both. The summary it shows at the end is
+read straight back out of the review log rather than counted alongside it, so it
+cannot disagree with the history, and it carries no streak, score or percentage,
+because a session summary is one step away from the gamification this project
+exists to avoid. Going again grants exactly one more day's allowance of new
+words, not an unlimited supply, because every word introduced today comes back
+over the following days.
+
+Real use also made the log irreplaceable, so the first thing built after the
+slice was the backup: every answer in the browser rewrites a plain-text export
+that lives in the repository, with a natural key on every row so a restore does
+not depend on database ids landing the same way twice.
 
 The largest known gap is simply volume. Seventy-four drillable words is about a
 week of new material at ten a day, which is a test harness rather than a course.
-Scaling it is a data task rather than a code task, now that importing a reviewed
-file is a single re-runnable command, and it is queued behind real use for a
-specific reason: generating thousands of entries the learner cannot check, before
-a verification pass exists, would manufacture unverified claims at speed.
+The target is six hundred, roughly the size of an A1 wordlist, then thirteen
+hundred. Scaling is a data task rather than a code task, but it waits on a
+verification pass, because generating entries the learner cannot check would
+manufacture unverified claims at speed. That pass has two legs that fail
+differently: a dictionary and a separate model acting as auditor. The dictionary
+leg has its source, German Wiktionary queried live, and a probe against every
+noun already held agreed on all 42 genders it could read, caught all 20 genders
+corrupted on purpose, and found the three Dutch errors recorded weeks earlier by
+hand.
 
 One decision remains genuinely open: whether speech recognition gets built at
 all. Decent German and Dutch recognition is a lot of complexity to carry for a

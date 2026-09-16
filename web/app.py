@@ -30,7 +30,7 @@ from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from wordhoard import backup, db, session
+from wordhoard import backup, db, scheduler, session
 
 # Which learner and language this server is serving. A module constant rather
 # than a login, because there is no authentication anywhere in this system by
@@ -39,6 +39,35 @@ from wordhoard import backup, db, session
 # account.
 LEARNER_NAME: str | None = None   # None means "the only learner, whoever that is"
 LANGUAGE = "de"
+
+# Browser session state, and the only mutable module-level state in this app.
+#
+# It lives here rather than in wordhoard/ on purpose. A session is presentation:
+# the terminal runner has its own notion of one, this has another, and neither
+# belongs in the domain layer. Nothing in wordhoard/ should learn what a browser
+# session is.
+#
+# A plain dict rather than cookies or a store because there is one learner on
+# one machine with no authentication anywhere by design. The cost of being wrong
+# is small and bounded: `started_at` is only a boundary for reading review_log,
+# so losing it to a server restart resets what counts as "this session" and
+# never loses a single recorded answer. Every number in the summary comes out of
+# the log, not out of here.
+_SESSION = {
+    # When the current session began. Answers logged at or after this point are
+    # what the summary describes.
+    "started_at": datetime.now(timezone.utc),
+    # Extra new-word allowance granted by "go again" this session, on top of
+    # learner_languages.daily_new_limit. Reset whenever a session starts, so a
+    # grant can never outlive the sitting that asked for it.
+    "extra_new": 0,
+}
+
+
+def _start_session(now: datetime) -> None:
+    """Begin a new session: move the boundary, drop any granted allowance."""
+    _SESSION["started_at"] = now
+    _SESSION["extra_new"] = 0
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 
@@ -88,7 +117,8 @@ def index(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
     learner_id, learner_name = db.find_learner(conn, LEARNER_NAME)
     now = datetime.now(timezone.utc)
 
-    question = session.next_question(conn, learner_id, LANGUAGE, now=now)
+    question = session.next_question(conn, learner_id, LANGUAGE, now=now,
+                                     extra_new_allowance=_SESSION["extra_new"])
 
     context = {
         "learner_name": learner_name,
@@ -111,6 +141,86 @@ def index(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
     # signature, which passed "request" inside the context dict, fails here with
     # an unhelpful "unhashable type: 'dict'" from the Jinja template cache.
     return TEMPLATES.TemplateResponse(request, "index.html", context)
+
+
+@app.get("/finish")
+def finish(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
+    """End the session and show what happened. Reads, never writes.
+
+    A GET rather than a POST because finishing changes nothing: it queries
+    review_log for the rows logged since the session began and renders them.
+    That is also why refreshing it is harmless, which matters on a page whose
+    whole neighbourhood is built around not letting a reload write a second row
+    into an append-only log.
+
+    The session boundary is not moved here. A learner who finishes and then
+    presses back into the queue is still in the same session, and their summary
+    still describes all of it. Only "go again" starts a new one.
+    """
+    learner_id, learner_name = db.find_learner(conn, LEARNER_NAME)
+    now = datetime.now(timezone.utc)
+
+    summary = session.summarise(
+        conn, learner_id, LANGUAGE, since=_SESSION["started_at"], now=now)
+
+    soonest = summary["next_due_at"]
+    return TEMPLATES.TemplateResponse(request, "finished.html", {
+        "learner_name": learner_name,
+        "summary": summary,
+        "soonest": soonest,
+        "soonest_minutes": (soonest - now).total_seconds() / 60 if soonest else None,
+        "counts": _queue_counts(conn, learner_id, now),
+    })
+
+
+@app.post("/again")
+def again(conn: sqlite3.Connection = Depends(get_conn)):
+    """Start a fresh session, granting more new words only if none are due.
+
+    A POST because it mutates session state, and so that a refresh of the page
+    it redirects to cannot silently grant another allowance.
+
+    **The grant is conditional and bounded, and both halves matter.**
+    Conditional: an allowance is added only when the queue is genuinely empty,
+    which is exactly what was asked for. Granting one whenever the button was
+    pressed would quietly inflate the daily new count on ordinary sessions where
+    the learner simply wanted to carry on.
+
+    Bounded: one further daily allowance per press, not an unlimited cap. There
+    are around sixty unseen words; introducing all of them in one sitting would
+    hand every one of them back over the following days, and the learner would
+    be punished tomorrow for enthusiasm today by a mechanism they could not see
+    when they chose it. Pressing again grants another.
+    """
+    learner_id, _ = db.find_learner(conn, LEARNER_NAME)
+    now = datetime.now(timezone.utc)
+
+    # Asked with NO allowance, deliberately: the question is whether there is
+    # work under the ordinary daily rules, not whether a previous grant is still
+    # unspent. Asking with the current grant conflates the two, and the first
+    # version of this function did exactly that: pressing the button twice
+    # revoked the allowance it had just given, so a word appeared and then
+    # vanished. Caught by the plan's own "not cumulative" check.
+    still_due = session.next_question(
+        conn, learner_id, LANGUAGE, now=now, extra_new_allowance=0) is not None
+
+    _start_session(now)
+    if not still_due:
+        # The invariant is "one daily allowance of new words is available from
+        # now", not "add ten to a counter". Setting the extra to the number
+        # already introduced today makes the scheduler's arithmetic
+        #     remaining = daily_limit + extra - introduced_today
+        # come out at exactly daily_limit, however many have already been
+        # learned today. Without this the grant silently does nothing the second
+        # time: introduced_today has grown past the raised cap, and remaining
+        # falls back to zero.
+        #
+        # It also cannot compound. However many times the button is pressed, at
+        # most one allowance is ever available at once.
+        _SESSION["extra_new"] = scheduler.introduced_today(
+            conn, learner_id, LANGUAGE, now)
+
+    return RedirectResponse("/", status_code=303)
 
 
 @app.post("/answer")

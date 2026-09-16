@@ -1,0 +1,142 @@
+{# The end of a session.
+
+   A second template rather than a fourth state in index.html. The line is that
+   index.html is the loop and this is the thing outside it: this page has no
+   question, no answer box and no form that writes, so folding it in would mean
+   wrapping most of that file in a condition to say "none of this applies".
+
+   **What is deliberately NOT here matters more than what is.** No streak, no
+   total across sessions, no accuracy percentage, no personal best, no
+   encouragement. A session summary is one small step from a streak counter, and
+   a streak counter is the exact thing this project exists to not have. See
+   memory/no-gamification.md. The numbers below describe this sitting and stop.
+
+   No JavaScript, like everything else. There is no Close button because a
+   server-rendered page cannot close a browser tab: window.close() only works on
+   windows a script opened. Closing the tab is the natural action and needs no
+   control. #}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>word-hoard</title>
+<style>
+  /* Same palette and rhythm as index.html. Duplicated rather than extracted
+     into a shared stylesheet: two small templates that happen to agree is
+     cheaper to read than three files, and the moment there is a third page the
+     extraction becomes worth doing. */
+  :root {
+    --bg: #fbfaf7; --fg: #1c1a17; --muted: #6b665e;
+    --line: #ddd8cf; --ok: #2f6b3a; --no: #8c2f2f; --accent: #3a4a6b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17161a; --fg: #e8e4dc; --muted: #99938a;
+      --line: #35322c; --ok: #7fbf8c; --no: #d98a8a; --accent: #9fb3d9;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 3rem 1.25rem; background: var(--bg); color: var(--fg);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; justify-content: center;
+  }
+  main { width: 100%; max-width: 34rem; }
+  header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 1px solid var(--line); padding-bottom: .6rem; margin-bottom: 2rem;
+    font-size: .8rem; color: var(--muted);
+  }
+  header b { color: var(--fg); font-weight: 600; }
+  h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 1.5rem; }
+  .counts { list-style: none; padding: 0; margin: 0 0 1.5rem; font-size: 1.05rem; }
+  .counts li { padding: .25rem 0; }
+  .counts .n { font-weight: 600; display: inline-block; min-width: 2.2rem; }
+  .tally { font-size: .95rem; color: var(--muted); margin: 0 0 2rem; }
+  .tally b { color: var(--fg); font-weight: 600; }
+  .nothing { font-size: 1.05rem; color: var(--muted); margin-bottom: 2rem; }
+  .next { color: var(--muted); font-size: .9rem; margin-bottom: 2.5rem; }
+  button {
+    padding: .55rem 1.4rem; font-size: 1rem; font-family: inherit;
+    background: var(--fg); color: var(--bg); border: 0; border-radius: 3px; cursor: pointer;
+  }
+  .back { margin-top: 1.5rem; font-size: .8rem; }
+  .back a { color: var(--muted); }
+  footer { margin-top: 3rem; font-size: .75rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <span><b>word-hoard</b> &middot; {{ learner_name }} &middot; German</span>
+    <span>
+      {%- if counts.total -%}
+        {{ counts.due }} due, {{ counts.new }} new
+      {%- else -%}
+        queue empty
+      {%- endif -%}
+    </span>
+  </header>
+
+  <h1>Session finished</h1>
+
+  {# The zero case is a real case, not an edge one: opening the app, finding
+     nothing due and leaving again is an ordinary thing to do. Saying "0
+     answered" would be technically true and read as a reproach. #}
+  {% if summary.answered or summary.introduced %}
+    <ul class="counts">
+      {% if summary.answered %}
+        <li><span class="n">{{ summary.answered }}</span>
+            answered</li>
+      {% endif %}
+      {% if summary.introduced %}
+        <li><span class="n">{{ summary.introduced }}</span>
+            new word{{ '' if summary.introduced == 1 else 's' }} learned</li>
+      {% endif %}
+    </ul>
+
+    {# Introductions are never folded into this tally. A word being taught is
+       recorded at a fixed rating because a typo copied off the screen says
+       nothing about memory, and counting it as a correct answer would flatter
+       the numbers. #}
+    {% if summary.answered %}
+      <p class="tally">
+        <b>{{ summary.tally[3] }}</b> good,
+        <b>{{ summary.tally[2] }}</b> nearly,
+        <b>{{ summary.tally[1] }}</b> again
+      </p>
+    {% endif %}
+  {% else %}
+    <p class="nothing">Nothing answered this session.</p>
+  {% endif %}
+
+  <p class="next">
+    {% if soonest_minutes is not none %}
+      {% if soonest_minutes < 60 %}
+        Next item due in {{ soonest_minutes | round | int }} min.
+      {% else %}
+        Next item due {{ soonest.strftime('%Y-%m-%d %H:%M') }} UTC.
+      {% endif %}
+    {% else %}
+      Nothing else is scheduled.
+    {% endif %}
+  </p>
+
+  {# A form rather than a link, because /again mutates session state. POST also
+     means a refresh of the page it redirects to cannot silently grant a second
+     allowance of new words. #}
+  <form method="post" action="/again">
+    <button type="submit">Go again</button>
+  </form>
+
+  <p class="back"><a href="/">back to the queue</a></p>
+
+  <footer>
+    Closing the tab is fine. Everything is already saved.
+  </footer>
+
+</main>
+</body>
+</html>

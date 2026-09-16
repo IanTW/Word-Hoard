@@ -121,6 +121,7 @@ def next_question(
     learner_id: int,
     language_code: str,
     now: datetime | None = None,
+    extra_new_allowance: int = 0,
 ) -> Question | None:
     """The next thing to ask, or None when there is nothing due.
 
@@ -132,7 +133,8 @@ def next_question(
     """
     now = now or datetime.now(timezone.utc)
 
-    for row in scheduler.due_queue(conn, learner_id, language_code, now=now):
+    for row in scheduler.due_queue(conn, learner_id, language_code, now=now,
+                                   extra_new_allowance=extra_new_allowance):
         question = build_question(
             conn,
             row["content_type"],
@@ -148,6 +150,80 @@ def next_question(
         # deleted: item_state may carry real review history, and this project
         # suppresses rather than deletes.
     return None
+
+
+def summarise(
+    conn: sqlite3.Connection,
+    learner_id: int,
+    language_code: str,
+    since: datetime,
+    now: datetime | None = None,
+) -> dict:
+    """Describe what happened in a session, read back out of `review_log`.
+
+    **Every number here is derived from the log rather than counted alongside
+    it.** That is the whole point of the function. A summary kept in a counter
+    can drift from the history it claims to describe, and the drift is invisible
+    because both numbers look plausible. Reading the log means the summary
+    cannot disagree with what actually happened, and it means losing the
+    session marker to a server restart costs the boundary of the session and
+    never a count.
+
+    `since` is the session boundary, supplied by the caller. This module has no
+    opinion about what starts a session: the terminal has one notion, the
+    browser another, and both are presentation.
+
+    Introductions are reported separately from answers and never folded into the
+    tally. An introduction is a word being taught, recorded at a fixed rating
+    because a typo copied off the screen is not evidence about memory. Counting
+    it as a correct answer would flatter the numbers.
+
+    Deliberately absent: streaks, totals across sessions, accuracy percentages,
+    records, personal bests. This is the exact screen where a tool like this
+    reinvents the gamification it was built to avoid, so the omissions are the
+    feature. See memory/no-gamification.md.
+    """
+    now = now or datetime.now(timezone.utc)
+
+    # review_log carries no language_code, so the join to item_state is what
+    # scopes the summary to the language being studied. It is a join rather than
+    # a denormalized column because review_log is append-only history: adding a
+    # column there would mean deciding what to write into every existing row.
+    rows = conn.execute(
+        """
+        SELECT r.exercise_type, r.rating
+          FROM review_log r
+          JOIN item_state s
+            ON s.learner_id = r.learner_id
+           AND s.content_type = r.content_type
+           AND s.content_id = r.content_id
+         WHERE r.learner_id = ?
+           AND s.language_code = ?
+           AND r.reviewed_at >= ?
+        """,
+        (learner_id, language_code, scheduler.to_db_time(since)),
+    ).fetchall()
+
+    # Tally only the real tests. Ratings are counted by the names the learner
+    # was shown during the session, so the summary and the feedback agree.
+    tally = {1: 0, 2: 0, 3: 0, 4: 0}
+    answered = 0
+    introduced = 0
+    for row in rows:
+        if row["exercise_type"] == INTRODUCTION_EXERCISE_TYPE:
+            introduced += 1
+            continue
+        answered += 1
+        if row["rating"] in tally:
+            tally[row["rating"]] += 1
+
+    return {
+        "answered": answered,
+        "introduced": introduced,
+        "tally": tally,
+        "next_due_at": next_due_at(conn, learner_id, language_code, now=now),
+        "since": since,
+    }
 
 
 def next_due_at(

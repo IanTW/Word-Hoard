@@ -4,17 +4,23 @@ Closed items move to [TODO_archive.md](TODO_archive.md) verbatim, they are not d
 
 ## Focus
 
-**The vertical slice is complete. Use it before widening it.** All six steps
-are done. `.venv/Scripts/python.exe scripts/serve.py` serves the app at
+**The app is in real use. The next session starts at M3.** The vertical slice
+is complete. `.venv/Scripts/python.exe scripts/serve.py` serves the app at
 http://127.0.0.1:8000, and `scripts/review.py` does the same thing in a
-terminal. The database was reset after step 6 testing, so `review_log` is
-empty and the first real session starts clean.
+terminal. **`review_log` now holds real history (22 rows at the 2026-09-10
+backup). Never reset the database.**
 
 **M1 is done as of 2026-09-08: the backup exists and runs automatically.**
 `data/backup/` holds newline-delimited JSON of `review_log`, `item_state` and
 the learner rows, refreshed after every answer in the browser and at the end of
-every terminal session. The next session starts at **M2**, making the interface
-usable for daily sessions, or at **M3** if content matters more than comfort.
+every terminal session.
+
+**M2a is done as of 2026-09-10:** `finish session`, a summary page and `Go
+again`, requested by the first real session. The rest of M2 waits on use.
+
+**M3 leg 1 has its source**, German Wiktionary's live API, chosen by probe on
+2026-09-10. **The probe script was lost with its session scratchpad**, so the
+next step is rebuilding it under `wordhoard/` from the description in M3.
 
 The standing rule was that nothing after the slice begins until the loop has
 been used for real. **The user confirmed on 2026-09-08 that they will now use
@@ -42,8 +48,7 @@ Three project conventions landed 2026-09-07 and change how the next session
 works rather than what it builds: the no-dashes rule now has a mechanical check
 behind it, learner-facing features need a `docs/TESTPLAN.md` section agreed
 before any code, and Wrap Up gained a housekeeping step. See **Project
-conventions** below. None of this touches the standing rule above: real use
-still gates everything.
+conventions** below.
 
 The 34 closed items were archived to `docs/TODO_archive.md` on 2026-09-07,
 verbatim. Nothing was summarised; the file is the record of how each decision
@@ -91,9 +96,11 @@ gate on everything else is no longer step 6, which works; it is real use.
       `web/app.py`. Deliberate for now, since it is presentation and the two
       surfaces may reasonably word things differently. If they ever must agree,
       it moves into `wordhoard/`. Left as a marker, not a defect.
-- [ ] 6b. The web interface has no way to leave a session, because it has no
+- [x] 6b. The web interface has no way to leave a session, because it has no
       notion of one. The terminal runner has `:q`. Decide whether the browser
-      needs anything, after real use.
+      needs anything, after real use. **ANSWERED BY REAL USE 2026-09-10**, which
+      is what "after real use" was waiting for: "could do with a restart button
+      if I want to go again and a quit button". Closed by M2a below.
 
 ## Content quality
 
@@ -176,14 +183,33 @@ recreated.
 The one page was specified as minimal and was verified as correct. Minimal was
 right for proving the loop; it is not right for someone opening it every day.
 
-- [ ] A notion of a session, so there is something to finish. Currently the
-      browser has no way to stop, which is TODO 6b. The terminal has `:q`.
+**M2a is done, 2026-09-10, requested by the first real session.** Plan and
+results in `docs/TESTPLAN.md`.
+
+- [x] A notion of a session, so there is something to finish. `finish session`
+      on every screen, a summary page, and `Go again`. Session state lives in
+      `web/app.py` only; nothing in `wordhoard/` learns what a browser session
+      is. Closes 6b.
+- [x] An end-of-session summary. Answered, learned, the good/nearly/again tally,
+      and when the next item is due. **Every number is read back out of
+      `review_log` rather than counted alongside it**, so the summary cannot
+      disagree with the history. No streaks, no XP, no percentages, no praise;
+      a check greps the rendered page for all of them.
+- [x] Going again past the daily cap. `Go again` grants exactly one further
+      daily allowance of new words, and only when nothing is due under the
+      ordinary rules. Bounded on purpose: introducing all 64 unseen words in one
+      sitting would hand every one of them back over the following days.
 - [ ] Show progress within the session: how many answered, how many left today.
-- [ ] An end-of-session summary. Counts and what comes back when. **No streaks,
-      no XP, no encouragement.** See `memory/no-gamification.md`.
+      The header already shows what is waiting; whether an in-session counter
+      adds anything is a question for use, not for argument.
 - [ ] Decide whether the "that was easy" control from 4a-ii belongs here. It is
       the fix for the grader never producing Easy, and this is the milestone
       where an extra control has somewhere to live.
+- [ ] **Watch for a punishing review day** a few days after leaning on
+      `Go again`. That is the signal the grant size is wrong, and the fix is the
+      number, not the button. First use 2026-09-10: **"works good"**, which
+      settles the feel of it but not the consequence, since the consequence
+      arrives days later as a heavier queue.
 
 ### M3. Content verification. **Blocks all content growth.**
 
@@ -191,11 +217,53 @@ Approach decided 2026-09-08: **dictionary check plus an independent model as
 auditor.** Neither alone is enough, and they fail differently, which is the
 point.
 
-- [ ] **Leg 1, dictionary.** Check lemma spelling and noun gender against an
-      independent source. Candidates to evaluate: a Wiktionary extract such as
-      kaikki.org, which is downloadable and therefore usable offline; or the
-      DWDS API. Prefer an offline dump: it removes the Netskope variable, it is
-      reproducible, and it can be re-run for free.
+- [x] **Leg 1, dictionary. SOURCE DECIDED 2026-09-10 by probe, before any
+      build.** German Wiktionary's own API, batched, up to 50 titles per call.
+      Not the kaikki.org bulk dump: it exists and is reachable, but it is
+      **1027 MB** for a check that needs one field per word, and the live API
+      answered every noun we hold in **2 calls**. Roughly 30 calls would cover
+      the 1300 word target.
+
+      **Probe results, on a naive query set of all 45 gendered nouns in the
+      database, in id order rather than chosen:**
+
+      | Measure | Result |
+      |---|---|
+      | Entry found | 45 of 45 |
+      | Gender parsed | 42 of 45 |
+      | Agreed with ours | **42 of 42** |
+      | Disagreed | 0 |
+
+      The 3 that did not parse are `der`, `die` and `das`, which are articles
+      carrying a gender in our data rather than nouns. Not a source failure.
+
+      **The zero disagreements were checked rather than trusted.** Twenty
+      genders were deliberately corrupted and the check caught **20 of 20**, so
+      the agreement figure is a result about the content and not an artefact of
+      an instrument that cannot fail.
+
+      **And it was tested against the only real ground truth in the repository:**
+      the three Dutch errors recorded in this file on 2026-08-23, long before
+      this pipeline was imagined. Dutch Wiktionary returns neuter for `brood`,
+      `kind` and `meisje`, so the method finds **3 of 3** errors that were
+      documented independently of it.
+
+      **What this does NOT establish**, and the distinction decides how much
+      weight the number can carry: it measured content transcribed from the
+      user's own mindmaps and hand-corrected. M3 exists to check content
+      GENERATED at scale, which is a different population that may fail in
+      different ways. 42 of 42 is a census of what we hold, not an estimate of
+      what generation will produce. It also says nothing about translations,
+      which are the other half of an entry and the half more likely to be wrong:
+      gender is a closed three-way choice with a definitive answer, and a
+      translation is neither.
+- [ ] **Rebuild the probe as the implementation.** The 2026-09-10 probe
+      batched up to 50 titles per call, parsed the heading template and handled
+      a missing entry, but it lived only in a session scratchpad and **was gone
+      by 2026-09-16**. Build it under `wordhoard/` with a cache so a re-run costs
+      nothing, decide what to do with an unparsed entry, and re-run the three
+      probe checks above (45 nouns, 20 corruptions, 3 Dutch errors) to confirm
+      the rebuild matches.
 - [ ] **Leg 2, model auditor.** A second pass that reviews each drafted entry
       and returns a structured verdict rather than prose. Runs as a separate
       call from whatever generated the entry.
