@@ -59,11 +59,6 @@ else.
 
 ## Open decisions
 
-- [x] Exact format and location of the plain-text backup export. **SETTLED
-      2026-09-08 by building it (M1).** Newline-delimited JSON, one file per
-      table, in `data/backup/`, committed to git. Triggers: after every answer
-      in the browser, at session end in the terminal, and on demand via
-      `scripts/export_backup.py`.
 - [ ] Whether speech recognition is built at all. Deprioritised below typing,
       reading and listening. German and Dutch ASR is a lot of complexity for a
       personal tool.
@@ -96,12 +91,6 @@ gate on everything else is no longer step 6, which works; it is real use.
       `web/app.py`. Deliberate for now, since it is presentation and the two
       surfaces may reasonably word things differently. If they ever must agree,
       it moves into `wordhoard/`. Left as a marker, not a defect.
-- [x] 6b. The web interface has no way to leave a session, because it has no
-      notion of one. The terminal runner has `:q`. Decide whether the browser
-      needs anything, after real use. **ANSWERED BY REAL USE 2026-09-10**, which
-      is what "after real use" was waiting for: "could do with a restart button
-      if I want to go again and a quit button". Closed by M2a below.
-
 ## Content quality
 
 The verify/validate cycle that used to head this section is now **M3** in the
@@ -142,29 +131,6 @@ before any code.
 
 ### M1. Protect the review log. **DONE 2026-09-08.**
 
-- [x] Plain-text export of `review_log` and `item_state` as newline-delimited
-      JSON. Built 2026-09-08 as `wordhoard/backup.py` plus
-      `scripts/export_backup.py`. Lands in `data/backup/`, which is committed:
-      `*.db` is gitignored, so this is the versioned artifact. Every row carries
-      a `content_key` natural key as well as its id, so a restore does not depend
-      on autoincrement ids landing the same way. Writes are atomic, through a
-      temporary file and `os.replace` with an `fsync`, so a crash cannot leave a
-      truncated file that still parses. Verified by 15 checks agreed in
-      `docs/TESTPLAN.md` before the code, run against scratch copies: counts,
-      determinism, JSON validity, key agreement, round trip through a rebuilt
-      database with reassigned ids, source integrity, and umlauts.
-- [x] Decide the trigger. **DECIDED 2026-09-08: both, and automatically.** The
-      browser exports after **every answer**, because it has no notion of a
-      session to end and because the cost is negligible at this size, so a crash
-      can never lose more than zero reviews. The terminal exports once at session
-      end, because it does have a session. Both use `export_quietly`, which
-      never raises: a backup failure must not cost the learner an answer.
-      `scripts/export_backup.py` is the loud path for finding out why.
-      Verified 14 of 14, three times.
-- [x] Retire `memory/user-data-is-disposable-for-now.md`, or rewrite it to say
-      the opposite. Its own expiry condition has fired. Done 2026-09-08: marked
-      EXPIRED and inverted, rather than deleted, because other memories link to
-      it and because the reversal is the fact worth keeping.
 - [ ] **The backup is still on the same disk as the database.** It survives a
       corrupt database file, not a lost machine. Off-machine only happens when
       `data/backup/` is committed and pushed, which is manual. Decide whether
@@ -186,19 +152,6 @@ right for proving the loop; it is not right for someone opening it every day.
 **M2a is done, 2026-09-10, requested by the first real session.** Plan and
 results in `docs/TESTPLAN.md`.
 
-- [x] A notion of a session, so there is something to finish. `finish session`
-      on every screen, a summary page, and `Go again`. Session state lives in
-      `web/app.py` only; nothing in `wordhoard/` learns what a browser session
-      is. Closes 6b.
-- [x] An end-of-session summary. Answered, learned, the good/nearly/again tally,
-      and when the next item is due. **Every number is read back out of
-      `review_log` rather than counted alongside it**, so the summary cannot
-      disagree with the history. No streaks, no XP, no percentages, no praise;
-      a check greps the rendered page for all of them.
-- [x] Going again past the daily cap. `Go again` grants exactly one further
-      daily allowance of new words, and only when nothing is due under the
-      ordinary rules. Bounded on purpose: introducing all 64 unseen words in one
-      sitting would hand every one of them back over the following days.
 - [ ] Show progress within the session: how many answered, how many left today.
       The header already shows what is waiting; whether an in-session counter
       adds anything is a question for use, not for argument.
@@ -217,46 +170,6 @@ Approach decided 2026-09-08: **dictionary check plus an independent model as
 auditor.** Neither alone is enough, and they fail differently, which is the
 point.
 
-- [x] **Leg 1, dictionary. SOURCE DECIDED 2026-09-10 by probe, before any
-      build.** German Wiktionary's own API, batched, up to 50 titles per call.
-      Not the kaikki.org bulk dump: it exists and is reachable, but it is
-      **1027 MB** for a check that needs one field per word, and the live API
-      answered every noun we hold in **2 calls**. Roughly 30 calls would cover
-      the 1300 word target.
-
-      **Probe results, on a naive query set of all 45 gendered nouns in the
-      database, in id order rather than chosen:**
-
-      | Measure | Result |
-      |---|---|
-      | Entry found | 45 of 45 |
-      | Gender parsed | 42 of 45 |
-      | Agreed with ours | **42 of 42** |
-      | Disagreed | 0 |
-
-      The 3 that did not parse are `der`, `die` and `das`, which are articles
-      carrying a gender in our data rather than nouns. Not a source failure.
-
-      **The zero disagreements were checked rather than trusted.** Twenty
-      genders were deliberately corrupted and the check caught **20 of 20**, so
-      the agreement figure is a result about the content and not an artefact of
-      an instrument that cannot fail.
-
-      **And it was tested against the only real ground truth in the repository:**
-      the three Dutch errors recorded in this file on 2026-08-23, long before
-      this pipeline was imagined. Dutch Wiktionary returns neuter for `brood`,
-      `kind` and `meisje`, so the method finds **3 of 3** errors that were
-      documented independently of it.
-
-      **What this does NOT establish**, and the distinction decides how much
-      weight the number can carry: it measured content transcribed from the
-      user's own mindmaps and hand-corrected. M3 exists to check content
-      GENERATED at scale, which is a different population that may fail in
-      different ways. 42 of 42 is a census of what we hold, not an estimate of
-      what generation will produce. It also says nothing about translations,
-      which are the other half of an entry and the half more likely to be wrong:
-      gender is a closed three-way choice with a definitive answer, and a
-      translation is neither.
 - [ ] **Rebuild the probe as the implementation.** The 2026-09-10 probe
       batched up to 50 titles per call, parsed the heading template and handled
       a missing entry, but it lived only in a session scratchpad and **was gone
@@ -295,12 +208,6 @@ weaker evidence than agreement with the dictionary.
 
 ### M4. Scale the content
 
-- [x] Decide a target size. **DECIDED 2026-09-08, user agreed the proposal:
-      600 drillable entries first**, roughly Goethe A1 coverage, **then 1300 for
-      A2.** Current count is 74, so A1 alone is an eight-fold increase and A2 a
-      seventeen-fold one. Both numbers are targets rather than measurements: no
-      claim is made that 600 words is A1, only that A1 wordlists are around that
-      size.
 - [ ] Decide the source. Candidates already noted: a frequency list, the Goethe
       A1 and A2 wordlists, or generation audited through M3. Frequency lists put
       function words at the top, which are the worst possible typing cards, so
@@ -374,20 +281,5 @@ These are real but none of them blocks anything above.
 Adopted 2026-09-07 by porting from the atc-game project on this machine. See
 `docs/DEVLOG.md` for that session.
 
-- [x] **Offer to fix the two hook defects in atc-game.** The originals at
-      `F:\Programming\Godot\Projects\atc-game\.claude\hooks\` carry both bugs
-      found above, which means that project's dash check may never have blocked
-      anything. Offered 2026-09-07. **DECLINED by the user the same day: leave
-      it.** Recorded rather than dropped, so the next person to touch that
-      project's hooks knows the bugs are known and the decision was deliberate.
-      Both are described in `CLAUDE.md` under the mechanical check.
 - [ ] Decide whether `.claude/settings.local.json` is ever needed here. Not
       created, because nothing so far is personal rather than project-wide.
-
-## Housekeeping
-
-- [ ] Decide what happens to `word-hoard.db` if it is ever lost before the
-      plain-text export exists. Right now the content is fully rebuildable
-      from `data/review/german_draft.tsv` by re-running the import, but
-      `review_log` is not rebuildable by anything. That gap closes when the
-      export is built, and until then it is a real single point of failure.

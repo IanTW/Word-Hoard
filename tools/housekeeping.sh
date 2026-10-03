@@ -109,9 +109,10 @@ echo
 # ---------------------------------------------------------------------------
 # 4. Closed items still sitting in TODO.md.
 #
-# Reported, never acted on. CLAUDE.md is explicit that archiving happens when the
-# user asks, not proactively, so this is a count to inform that decision rather
-# than a defect. A large number simply means the file is getting noisy.
+# Reported, never acted on. Any closed item is flagged, so every Wrap Up
+# proposes the archive and the user says yes or no. The threshold was 20 until
+# 2026-10-03, when the user ruled that archiving is always proposed, never left
+# to a request (11 closed items had piled up unflagged). Matches the kit's check.
 # ---------------------------------------------------------------------------
 echo "TODO archive pressure"
 # grep -c prints a count and still exits 1 when the count is zero, so a
@@ -122,10 +123,10 @@ open_items="$(grep -c '^- \[ \]' docs/TODO.md 2>/dev/null)"
 closed="${closed:-0}"
 open_items="${open_items:-0}"
 echo "  $closed closed and $open_items open items in docs/TODO.md"
-if [ "$closed" -gt 20 ]; then
-    note "$closed closed items are candidates for docs/TODO_archive.md, ask before moving them"
+if [ "$closed" -gt 0 ]; then
+    note "$closed closed item(s) to archive: propose the move in the Wrap Up report"
 else
-    ok "archive pressure is low"
+    ok "no closed items"
 fi
 echo
 

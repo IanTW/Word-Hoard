@@ -13,6 +13,49 @@ The entries for 2026-09-08 and 2026-09-10 were reconstructed the same way on
 `docs/TESTPLAN.md` and `docs/TODO.md`, after the housekeeping check flagged the
 DEVLOG as older than the newest commit.
 
+## 2026-10-03: Audit remediation handed down from claude-admin (archive, CLAUDE.md trim, housekeeping threshold)
+
+**Focus:** Apply the word-hoard fixes agreed in claude-admin's review of audit `2026-10-03-1816` (findings 53 to 55). Made from a claude-admin session on the user's yes; no app code touched.
+
+**Worked on:**
+- Archived the 11 closed items in `docs/TODO.md` verbatim into `docs/TODO_archive.md`, under matching headings. Checked mechanically: all 93 removed non-blank lines appear unchanged in the archive.
+- Closed and archived the Housekeeping item about losing `word-hoard.db` before the export existed; its condition passed when M1 built the export 2026-09-08. The section emptied, so its heading went.
+- Trimmed `CLAUDE.md` from 457 lines to about 130, keeping only project facts. Everything removed repeats `~/.claude/CLAUDE.md`, except three details kept as a short "Additions to the global rules" list. This also removed the old "do not archive proactively" rule.
+- Fixed the stale overview line that listed the backup export as not built.
+- `tools/housekeeping.sh` section 4 now flags any closed item (was: more than 20), matching the kit.
+- Moved the 2026-09-16 entry into date order.
+
+**Troubleshooting / dead ends:**
+- The housekeeping check said "archive pressure is low" with 11 closed items, because its threshold was 20. That threshold, together with the "archive only on request" rule, is how closed items piled up.
+
+**Decisions:**
+- The user ruled 2026-10-03 that archiving is always proposed at Wrap Up, never left to a request. The move itself still waits for the user's yes.
+
+**Next:**
+- The project's own work resumes from the 2026-09-10 entry's Next: commit and watch Go again, then M3 (rebuild the Wiktionary check under `wordhoard/`).
+
+## 2026-09-16: The dash checks move to the shared hooks (change handed down from claude-admin)
+
+**Focus:** Retire this project's copies of the two dash checks, ported from atc-game 2026-09-07, in favour of the shared hooks in `~/.claude/hooks/`, deployed from claude-admin, so they are maintained in one place for every project. Made from a claude-admin session on the user's yes; no app code touched.
+
+**Worked on:**
+- Deleted `.claude/settings.json`, which held only the two hook registrations, then `.claude/hooks/no_dashes_response.ps1` and `.claude/hooks/no_dashes_file.ps1`.
+- New `.claude/kit.json` with no exceptions.
+- `CLAUDE.md` lines 106 to 121 now describe the shared hooks. The paragraph on the two defects fixed during the port was dropped from there, since this DEVLOG already records both (`docs/DEVLOG.md` lines 147 to 160, in the 2026-09-08 entry below) and so do the global rules. The decision not to hook the format sections stays.
+- `tools/housekeeping.sh` section 6 (lines 170 to 201) rewritten. It checked the local hook files, which no longer exist, so it would have flagged three missing files every Wrap Up. It now checks that the shared scripts exist, that `kit.json` exists, that no local settings file registers a dash hook again, and that `kit.json` does not quietly exclude one.
+
+**Troubleshooting / dead ends:**
+- Checked before removing that nothing narrows. The retired file guard judged `.md`, `.txt`, `.py`, `.sql` and `.html`; the shared one judges all five plus seven more. Every long document in `docs/` is on the shared line reference list, so no `watch_extra` is needed.
+- **The rewritten check first missed a planted local hook.** `grep -l pattern a b` exits 2 when one of the two files is absent, even after a match, so the `if` read it as no match. Fixed by piping through `cat` first. Found by running the check on a scratch copy with a planted `settings.json` before trusting it; after the fix all three cases were right: planted local hook flagged, an exclusion in `kit.json` flagged, and this project clean.
+- `git rm` of the last files under `.claude/` removed the folder itself, so `kit.json` needed the folder recreated.
+- `verify.py` (from claude-admin) went from 15 of 21 to 18 of 18. Before, the shared guards stepped aside here because this project registered its own copies, so their blocking checks exited 0.
+
+**Decisions:**
+- This entry first sat below the 2026-09-10 session entry, so the recap would keep showing that session's Focus and Next. Moved into date order 2026-10-03: out of order it broke newest-first and the housekeeping check flagged the DEVLOG as behind at every Wrap Up.
+
+**Next:**
+- The user checks in a live session here: a reply with an em dash is refused, and so is one naming `docs/TODO.md` without a line number.
+
 ## 2026-09-10: Finish and Go again, and the dictionary source chosen by probe (M2a, M3 leg 1)
 
 **Reconstructed:** _written 2026-09-16 from the uncommitted working tree,
@@ -91,28 +134,6 @@ go again, then choose the dictionary source for content verification._
   real review history.
 - Watch for a punishing review day after using Go again.
 - M3: rebuild the Wiktionary check under `wordhoard/`, with a cache.
-
-## 2026-09-16: The dash checks move to the shared hooks (change handed down from claude-admin)
-
-**Focus:** Retire this project's copies of the two dash checks, ported from atc-game 2026-09-07, in favour of the shared hooks in `~/.claude/hooks/`, deployed from claude-admin, so they are maintained in one place for every project. Made from a claude-admin session on the user's yes; no app code touched.
-
-**Worked on:**
-- Deleted `.claude/settings.json`, which held only the two hook registrations, then `.claude/hooks/no_dashes_response.ps1` and `.claude/hooks/no_dashes_file.ps1`.
-- New `.claude/kit.json` with no exceptions.
-- `CLAUDE.md` lines 106 to 121 now describe the shared hooks. The paragraph on the two defects fixed during the port was dropped from there, since this DEVLOG already records both (`docs/DEVLOG.md` lines 147 to 160, in the 2026-09-08 entry below) and so do the global rules. The decision not to hook the format sections stays.
-- `tools/housekeeping.sh` section 6 (lines 170 to 201) rewritten. It checked the local hook files, which no longer exist, so it would have flagged three missing files every Wrap Up. It now checks that the shared scripts exist, that `kit.json` exists, that no local settings file registers a dash hook again, and that `kit.json` does not quietly exclude one.
-
-**Troubleshooting / dead ends:**
-- Checked before removing that nothing narrows. The retired file guard judged `.md`, `.txt`, `.py`, `.sql` and `.html`; the shared one judges all five plus seven more. Every long document in `docs/` is on the shared line reference list, so no `watch_extra` is needed.
-- **The rewritten check first missed a planted local hook.** `grep -l pattern a b` exits 2 when one of the two files is absent, even after a match, so the `if` read it as no match. Fixed by piping through `cat` first. Found by running the check on a scratch copy with a planted `settings.json` before trusting it; after the fix all three cases were right: planted local hook flagged, an exclusion in `kit.json` flagged, and this project clean.
-- `git rm` of the last files under `.claude/` removed the folder itself, so `kit.json` needed the folder recreated.
-- `verify.py` (from claude-admin) went from 15 of 21 to 18 of 18. Before, the shared guards stepped aside here because this project registered its own copies, so their blocking checks exited 0.
-
-**Decisions:**
-- This entry sits below the 2026-09-10 session entry rather than on top, so the recap keeps showing that session's Focus and Next, which is where the project's own work stands.
-
-**Next:**
-- The user checks in a live session here: a reply with an em dash is refused, and so is one naming `docs/TODO.md` without a line number.
 
 ## 2026-09-08: Conventions ported from atc-game, backup export built, work after the slice planned (M1)
 
