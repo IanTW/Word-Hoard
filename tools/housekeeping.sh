@@ -59,8 +59,11 @@ EN_DASH="$(printf '\xe2\x80\x93')"
 if [ "$IS_GIT" -eq 1 ]; then
     # --cached AND --others --exclude-standard: plain ls-files misses brand new
     # untracked files, which is exactly when a dash is most likely.
+    # grep -I skips binary files (any holding a NUL byte). Without it, 11 .ogg
+    # sound files in atc-game were reported as prose with dashes on
+    # 2026-10-04, because their bytes happened to contain the sequence.
     dash_hits="$(git ls-files -z --cached --others --exclude-standard 2>/dev/null \
-        | xargs -0 grep -l "[${EM_DASH}${EN_DASH}]" 2>/dev/null)"
+        | xargs -0 grep -lI "[${EM_DASH}${EN_DASH}]" 2>/dev/null)"
     if [ -n "$dash_hits" ]; then
         while IFS= read -r f; do
             [ -n "$f" ] && note "em or en dash in $f"

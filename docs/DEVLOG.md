@@ -13,6 +13,17 @@ The entries for 2026-09-08 and 2026-09-10 were reconstructed the same way on
 `docs/TESTPLAN.md` and `docs/TODO.md`, after the housekeeping check flagged the
 DEVLOG as older than the newest commit.
 
+## 2026-10-04: Hand-down from claude-admin, the dash sweep skips binary files
+
+**Focus:** One kit change to `tools/housekeeping.sh` section 1, handed down from claude-admin on the user's yes. No project code touched.
+
+**Worked on:**
+- The dash sweep now runs `grep -lI`, which skips binary files (any holding a NUL byte). Found in atc-game, where 11 `.ogg` sound files were reported as prose with dashes because their bytes happened to contain the sequence. Tested in claude-admin (`tools/test_dash_sweep.py`, 2 of 2, with a control run of the old script that fails as it should).
+- Checked here: the script matched the kit before the change and matches it after (claude-admin's drift check); `bash -n` passes.
+
+**Next:**
+- The project's own work resumes from its newest entry of its own work below.
+
 ## 2026-10-04: The housekeeping script becomes the kit's (change handed down from claude-admin)
 
 **Focus:** Replace this project's own `tools/housekeeping.sh` with the claude-admin kit's, keeping the framework-isolation check as this project's own. Made from a claude-admin session on the user's yes; no app code touched.
