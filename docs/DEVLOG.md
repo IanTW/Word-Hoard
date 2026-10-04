@@ -13,6 +13,20 @@ The entries for 2026-09-08 and 2026-09-10 were reconstructed the same way on
 `docs/TESTPLAN.md` and `docs/TODO.md`, after the housekeeping check flagged the
 DEVLOG as older than the newest commit.
 
+## 2026-10-04: Hand-down from claude-admin, the housekeeping checklist becomes the kit's
+
+**Focus:** Bring `docs/HOUSEKEEPING.md` up to the claude-admin kit's version, on the user's yes after claude-admin's first housekeeping pass found this copy out of date. No app code touched.
+
+**Worked on:**
+- `docs/HOUSEKEEPING.md` is now the kit's: two tiers (the check every Wrap Up, the pass at a milestone or after 10 DEVLOG entries) and the full pass checklist, which the old copy lacked. Kept from the old copy: the framework-isolation check in the tier 1 list, and the question whether anything in `word-hoard.db` is now real.
+
+**Decisions:**
+- Dropped the old "known findings" list. Its archive entry said archiving waits for the user to ask, which contradicts the user's 2026-10-03 ruling; its other entry described a report the kit script no longer makes.
+
+**Next:**
+- The housekeeping pass is due here (12 entries counting this one, none recorded); offer it at the next Wrap Up.
+- The project's own work resumes from its newest entry of its own work below.
+
 ## 2026-10-04: Hand-down from claude-admin, the dash sweep skips binary files
 
 **Focus:** One kit change to `tools/housekeeping.sh` section 1, handed down from claude-admin on the user's yes. No project code touched.
