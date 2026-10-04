@@ -13,6 +13,22 @@ The entries for 2026-09-08 and 2026-09-10 were reconstructed the same way on
 `docs/TESTPLAN.md` and `docs/TODO.md`, after the housekeeping check flagged the
 DEVLOG as older than the newest commit.
 
+## 2026-10-04: The housekeeping script becomes the kit's (change handed down from claude-admin)
+
+**Focus:** Replace this project's own `tools/housekeeping.sh` with the claude-admin kit's, keeping the framework-isolation check as this project's own. Made from a claude-admin session on the user's yes; no app code touched.
+
+**Worked on:**
+- `tools/housekeeping.sh` is now the kit template byte for byte, with the framework-isolation grep moved unchanged into its PROJECT-SPECIFIC block. claude-admin's new audit check confirms every kit section matches.
+- New from the kit: the TODO length check (open items over 1,500 characters), the housekeeping pass counter, the requirements check that tests each listed line against the venv, and the shared hook check that reads `~/.claude/hooks/shared_hooks.txt` (all four shared hooks, not two).
+- Checked by running old and new on the same tree: every old result still appears (framework isolation clean, 0 hits; no closed items; requirements fine); the new sections all report ok. `bash -n` passes and the script exits 0.
+
+**Decisions:**
+- Dropped the old section 6 extras (a local dash hook registration, kit.json naming a dash hook). claude-admin's audit covers both through the shared helper (`local-shared-hook` and `exception-no-reason` rules).
+
+**Next:**
+- The pass counter will say the housekeeping pass is due: this entry is the tenth since none was recorded.
+- The project's own work resumes from the 2026-09-10 entry's Next: commit and watch Go again, then M3 (rebuild the Wiktionary check under `wordhoard/`).
+
 ## 2026-10-03: Audit remediation handed down from claude-admin (archive, CLAUDE.md trim, housekeeping threshold)
 
 **Focus:** Apply the word-hoard fixes agreed in claude-admin's review of audit `2026-10-03-1816` (findings 53 to 55). Made from a claude-admin session on the user's yes; no app code touched.
