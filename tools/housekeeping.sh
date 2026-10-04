@@ -51,25 +51,90 @@ echo
 # The global rules ban both in prose. The hooks stop new ones written through
 # Claude's Write and Edit tools, but anything arriving by hand, by script or via
 # a spreadsheet round trip bypasses them. This sweep is the backstop.
+#
+# Only NEW dashes are listed: those on lines added since the newest DEVLOG
+# entry's date, which is the last session, because Wrap Up runs this script
+# before it writes today's entry. Files holding only older dashes are counted
+# in one line instead. Why: four projects carried 59 to 75 files with dashes
+# from before the rule (measured 2026-10-04), so a listing of every file buried
+# the one new dash it exists to catch. A dash on an untouched line of an edited
+# file is old, not new, so lines are judged, never whole files. With no dated
+# DEVLOG entry there is no "since", and every file is listed as before.
 # ---------------------------------------------------------------------------
 echo "dashes in tracked and new files"
 # Built from code points so this script never reports itself.
 EM_DASH="$(printf '\xe2\x80\x94')"
 EN_DASH="$(printf '\xe2\x80\x93')"
+
+# Print the files given a unified diff on stdin that ADD a line holding a dash.
+# A "+++ b/<path>" line names the file only inside a diff header (between
+# "diff --git" and the first "@@"), so an added line that happens to start with
+# "++" is never mistaken for a file name. Binary files have no "+" lines in a
+# diff, so they can never be listed here.
+added_dash_files() {
+    awk -v em="$EM_DASH" -v en="$EN_DASH" '
+        /^diff --git / { header = 1; file = ""; next }
+        header && /^\+\+\+ b\// { file = substr($0, 7); next }
+        /^@@/ { header = 0; next }
+        !header && file != "" && /^\+/ && (index($0, em) || index($0, en)) { print file }
+    '
+}
+
 if [ "$IS_GIT" -eq 1 ]; then
-    # --cached AND --others --exclude-standard: plain ls-files misses brand new
-    # untracked files, which is exactly when a dash is most likely.
+    # Every text file holding a dash now. --cached AND --others
+    # --exclude-standard: plain ls-files misses brand new untracked files,
+    # which is exactly when a dash is most likely.
     # grep -I skips binary files (any holding a NUL byte). Without it, 11 .ogg
     # sound files in atc-game were reported as prose with dashes on
     # 2026-10-04, because their bytes happened to contain the sequence.
     dash_hits="$(git ls-files -z --cached --others --exclude-standard 2>/dev/null \
         | xargs -0 grep -lI "[${EM_DASH}${EN_DASH}]" 2>/dev/null)"
-    if [ -n "$dash_hits" ]; then
+
+    # The newest dated DEVLOG heading. Entries are newest first, so the first
+    # match is the last session; the template's "## YYYY-MM-DD" example has
+    # no digits and never matches.
+    since="$(grep -m1 -oE '^## [0-9]{4}-[0-9]{2}-[0-9]{2}' docs/DEVLOG.md 2>/dev/null | cut -c4-)"
+
+    if [ -z "$dash_hits" ]; then
+        ok "none"
+    elif [ -z "$since" ]; then
+        # No date to measure from: list every file, as before 2026-10-04.
         while IFS= read -r f; do
             [ -n "$f" ] && note "em or en dash in $f"
         done <<< "$dash_hits"
     else
-        ok "none"
+        # Files that gained a dash since that day, from three places:
+        # commits since its start (-U0: added lines only, no context lines,
+        # --no-renames so the new path is always on the "+++ b/" line), the
+        # staged and unstaged work against HEAD, and untracked files read
+        # whole, since every line of a new file is new.
+        new_hits="$( {
+            git log --since="$since 00:00" --format= -p -U0 --no-color --no-renames 2>/dev/null \
+                | added_dash_files
+            git diff HEAD -U0 --no-color --no-renames 2>/dev/null | added_dash_files
+            git ls-files -z --others --exclude-standard 2>/dev/null \
+                | xargs -0 grep -lI "[${EM_DASH}${EN_DASH}]" 2>/dev/null
+        } | sort -u)"
+        # Keep only files that still hold a dash: one added and later removed
+        # in the same window is gone, and listing it would be a false alarm.
+        if [ -n "$new_hits" ]; then
+            new_hits="$(printf '%s\n' "$new_hits" | grep -Fxf <(printf '%s\n' "$dash_hits"))"
+        fi
+        new_count=0
+        if [ -n "$new_hits" ]; then
+            while IFS= read -r f; do
+                [ -n "$f" ] && note "em or en dash in $f" && new_count=$((new_count + 1))
+            done <<< "$new_hits"
+        else
+            ok "none added since $since"
+        fi
+        # The rest are older dashes: counted, deliberately not a finding,
+        # so they never reach the summary count.
+        all_count="$(printf '%s\n' "$dash_hits" | grep -c .)"
+        old_count=$((all_count - new_count))
+        if [ "$old_count" -gt 0 ]; then
+            printf '  %s other file(s) hold older dashes, from before %s, not listed\n' "$old_count" "$since"
+        fi
     fi
 fi
 echo

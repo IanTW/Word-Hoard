@@ -13,6 +13,17 @@ The entries for 2026-09-08 and 2026-09-10 were reconstructed the same way on
 `docs/TESTPLAN.md` and `docs/TODO.md`, after the housekeeping check flagged the
 DEVLOG as older than the newest commit.
 
+## 2026-10-04: Hand-down from claude-admin, the dash sweep lists only new dashes
+
+**Focus:** One kit change to `tools/housekeeping.sh`, handed down from claude-admin on the user's yes. No project code touched.
+
+**Worked on:**
+- The dash sweep (section 1 of `tools/housekeeping.sh`) now lists only files that gained a dash since the newest DEVLOG entry's date: commits since that day, staged and unstaged work, and untracked files. Older dashes get one count line instead of a line each, so a new dash no longer drowns among the files from before the rule. Tested in claude-admin (`tools/test_dash_sweep.py`, 6 of 6). The section is byte for byte the kit's; the rest of the script is unchanged.
+- Global, nothing to change here: the shared file dash guard `no_dashes_file.ps1` now runs before a Write, Edit or MultiEdit and refuses a dash, instead of complaining after it is on disk.
+
+**Next:**
+- The project's own work resumes from the 2026-09-10 entry's Next.
+
 ## 2026-10-04: Hand-down from claude-admin, the housekeeping checklist becomes the kit's
 
 **Focus:** Bring `docs/HOUSEKEEPING.md` up to the claude-admin kit's version, on the user's yes after claude-admin's first housekeeping pass found this copy out of date. No app code touched.
